@@ -77,48 +77,59 @@
             border-radius: 5px;
             overflow-x: auto;
         }
+        .sidebar { position:fixed; top:0; left:0; height:100%; width:300px; background:#fff; border-right:2px solid #3498db; overflow-y:auto; transform:translateX(-100%); transition:transform 0.3s ease; z-index:100; padding:16px; box-shadow:2px 0 8px rgba(0,0,0,0.1); }
+        .sidebar.open { transform:translateX(0); }
+        .sidebar-toggle { position:fixed; top:10px; left:10px; z-index:101; padding:6px 12px; font-size:1.2em; cursor:pointer; border:none; border-radius:4px; background:#3498db; color:white; }
+        .sidebar h2 { margin-top:0; color:#2c3e50; }
+        .main-content { margin-left:0; transition:margin-left 0.3s ease; }
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 </head>
 <body>
 
-    <h1>Database</h1>
+    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
 
-    <div class="card">
-        <h3>1. Gestión del Archivo de Base de Datos</h3>
-        <p>Puedes subir un archivo .sqlite existente o descargar el estado actual.</p>
-        <input type="file" id="uploadInput" accept=".sqlite,.db"><br><br>
-        <button id="downloadBtn" class="success">⬇️ Descargar Archivo .sqlite</button>
+    <div class="sidebar" id="sidebar">
+        <h2>🔧 Configuración</h2>
+
+        <div class="card" style="margin-bottom:12px">
+            <h3>Gestión de Archivo</h3>
+            <p>Subir o descargar la base de datos.</p>
+            <input type="file" id="uploadInput" accept=".sqlite,.db" style="width:100%"><br><br>
+            <button id="downloadBtn" class="success">⬇️ Descargar .sqlite</button>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+            <h3>Carpeta de Imágenes</h3>
+            <p>Selecciona la carpeta para imágenes.</p>
+            <button id="pickDirBtn">📁 Seleccionar</button>
+            <span id="dirStatus" style="display:block;margin-top:4px;font-size:0.85em;color:#999;">Ninguna</span>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+            <h3>Características</h3>
+            <p>Valor único: F/E/D/C/B/A/S.</p>
+            <button id="gestionCarBtn">⚙️ Gestionar</button>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+            <h3>Etiquetas</h3>
+            <p>Multiselección.</p>
+            <button id="gestionEtqBtn">🏷️ Gestionar</button>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+            <h3>Campos Personalizados</h3>
+            <p>Texto libre, lista única o múltiple.</p>
+            <button id="gestionCampBtn">🔧 Gestionar</button>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>2. Carpeta de Imágenes</h3>
-        <p>Selecciona una carpeta donde se guardarán las imágenes asociadas a los registros.</p>
-        <button id="pickDirBtn">📁 Seleccionar Carpeta</button>
-        <span id="dirStatus" style="margin-left:10px;color:#999;">Ninguna carpeta seleccionada</span>
-    </div>
+    <div class="main-content">
 
-    <div class="card">
-        <h3>3. Gestión de Características</h3>
-        <p>Administra las características que se pueden asignar a los usuarios (valor único: F/E/D/C/B/A/S).</p>
-        <button id="gestionCarBtn">⚙️ Gestionar Características</button>
-    </div>
-
-    <div class="card">
-        <h3>4. Gestión de Etiquetas</h3>
-        <p>Administra las etiquetas (tags) que se pueden asignar a los usuarios (multiselección).</p>
-        <button id="gestionEtqBtn">🏷️ Gestionar Etiquetas</button>
-    </div>
-
-    <div class="card">
-        <h3>5. Campos Personalizados</h3>
-        <p>Define campos dinámicos para los usuarios (texto libre, lista única o lista múltiple).</p>
-        <button id="gestionCampBtn">🔧 Gestionar Campos</button>
-    </div>
-
-    <div class="card" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer">
-        <h3>6. Importación por Arrastrar y Soltar</h3>
+    <div class="card" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer; margin-top:50px">
+        <h3>Importación por Arrastrar y Soltar</h3>
         <p>Arrastra una o varias imágenes aquí para crear automáticamente un usuario por cada una.</p>
         <p style="font-size:0.9em;color:#666">El nombre del usuario se tomará del nombre del archivo (sin extensión).</p>
         <div id="dropStatus" style="margin-top:8px;color:#999;font-size:0.9em">Suelta las imágenes aquí</div>
@@ -189,7 +200,7 @@
     </div>
 
     <div class="card">
-        <h3>7. Operaciones de Base de Datos</h3>
+        <h3>Operaciones</h3>
         <label for="nombreInput">Nombre:</label>
         <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
         <div id="carInputsContainer" style="margin-top:8px"></div>
@@ -200,14 +211,16 @@
     </div>
 
     <div class="card" id="filterCard">
-        <h3>8. Filtros</h3>
+        <h3>Filtros</h3>
         <div id="filterContainer" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start"></div>
     </div>
 
     <div class="card">
-        <h3>9. Contenido Actual de la Tabla `usuarios`</h3>
+        <h3>Usuarios</h3>
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
     </div>
+
+    </div> <!-- /main-content -->
 
     <input type="file" id="imageInput" accept="image/*" style="display:none">
     <div id="imageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
@@ -265,6 +278,11 @@
         let baseDirHandle = null;
         let imagesDirHandle = null;
         let uploadImageId = null;
+
+        // Sidebar toggle
+        document.getElementById('sidebarToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('open');
+        });
 
         // Inicializar carpeta de imágenes
         document.getElementById('pickDirBtn').addEventListener('click', async () => {
