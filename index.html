@@ -50,6 +50,18 @@
         .edit-input { width: 90%; padding: 4px; }
         .img-btn { padding: 4px 8px; font-size: 0.85em; margin: 2px 0; }
         .img-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+        .badge-S { color: #e74c3c; font-weight: bold; }
+        .badge-A { color: #e67e22; font-weight: bold; }
+        .badge-B { color: #d4a017; font-weight: bold; }
+        .badge-C { color: #2ecc71; font-weight: bold; }
+        .badge-D { color: #00bcd4; font-weight: bold; }
+        .badge-E { color: #9b59b6; font-weight: bold; }
+        .badge-F { color: #e91e90; font-weight: bold; }
+        .car-item { margin-right: 8px; display: inline-block; }
+        .car-cell { max-width: 200px; }
+        .car-select { margin: 0 6px 0 2px; padding: 2px 4px; }
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
+        .modal-content { background:white; padding:20px; border-radius:8px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; }
         pre {
             background: #272822;
             color: #f8f8f2;
@@ -80,15 +92,38 @@
     </div>
 
     <div class="card">
-        <h3>3. Operaciones de Base de Datos</h3>
+        <h3>3. Gestión de Características</h3>
+        <p>Administra las características que se pueden asignar a los usuarios.</p>
+        <button id="gestionCarBtn">⚙️ Gestionar Características</button>
+    </div>
+
+    <div id="modalCaracteristicas" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Gestión de Características</h3>
+            <table id="carTable" style="margin-bottom:10px">
+                <thead><tr><th>Nombre</th><th>Factor</th><th></th></tr></thead>
+                <tbody id="carTableBody"></tbody>
+            </table>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <input type="text" id="newCarNombre" placeholder="Nombre (ej: Altura)" style="flex:2">
+                <input type="number" id="newCarFactor" placeholder="Factor" step="0.01" style="flex:1">
+                <button id="addCarBtn">➕ Añadir</button>
+                <button id="closeCarBtn" style="background-color:#e74c3c;">✖ Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>4. Operaciones de Base de Datos</h3>
         <label for="nombreInput">Nombre:</label>
         <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
-        <button id="insertBtn">➕ Insertar</button>
+        <div id="carInputsContainer" style="margin-top:8px"></div>
+        <button id="insertBtn" style="margin-top:8px">➕ Insertar</button>
         <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
     </div>
 
     <div class="card">
-        <h3>4. Contenido Actual de la Tabla `usuarios`</h3>
+        <h3>5. Contenido Actual de la Tabla `usuarios`</h3>
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
     </div>
 
@@ -117,9 +152,18 @@
             // Crear una base de datos vacía en memoria por defecto
             db = new SQL.Database();
 
-            // Crear una tabla de prueba inicial
+            // Crear tablas
             db.run("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, imagen TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+            db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
+            db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
 
+            // Insertar característica por defecto
+            const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
+            if (cars.length === 0 || cars[0].values[0][0] === 0) {
+                db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
+            }
+
+            cargarCaracteristicas();
             actualizarTabla();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
 
@@ -222,12 +266,117 @@
             }
         });
 
+        // CRUD Características
+        let listaCaracteristicas = [];
+
+        function cargarCaracteristicas() {
+            const res = db.exec("SELECT id, nombre, factor FROM caracteristicas ORDER BY id;");
+            listaCaracteristicas = [];
+            if (res.length > 0) {
+                listaCaracteristicas = res[0].values.map(f => ({ id: f[0], nombre: f[1], factor: f[2] }));
+            }
+            renderizarCaracteristicas();
+            renderizarInputsCaracteristicas();
+        }
+
+        function renderizarCaracteristicas() {
+            const tbody = document.getElementById('carTableBody');
+            tbody.innerHTML = '';
+            listaCaracteristicas.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${c.nombre}</td><td>${c.factor !== null ? c.factor : '-'}</td>
+                    <td><button class="del-car-btn" data-id="${c.id}" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tbody.appendChild(tr);
+            });
+            document.querySelectorAll('.del-car-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!confirm('¿Eliminar esta característica?')) return;
+                    const id = parseInt(btn.dataset.id);
+                    db.run("DELETE FROM usuario_caracteristicas WHERE caracteristica_id = ?;", [id]);
+                    db.run("DELETE FROM caracteristicas WHERE id = ?;", [id]);
+                    cargarCaracteristicas();
+                    actualizarTabla();
+                });
+            });
+        }
+
+        function renderizarInputsCaracteristicas(selectedValues = {}) {
+            const container = document.getElementById('carInputsContainer');
+            container.innerHTML = '';
+            if (listaCaracteristicas.length === 0) {
+                container.innerHTML = '<em>No hay características definidas.</em>';
+                return;
+            }
+            const grados = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
+            let html = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
+            listaCaracteristicas.forEach(c => {
+                const val = selectedValues[c.id] || 'D';
+                html += `<label class="car-item">${c.nombre}:
+                    <select class="car-select" data-car-id="${c.id}">
+                        ${grados.map(g => `<option value="${g}" ${g === val ? 'selected' : ''}>${g}</option>`).join('')}
+                    </select>
+                </label>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Modal de características
+        document.getElementById('gestionCarBtn').addEventListener('click', () => {
+            document.getElementById('modalCaracteristicas').style.display = 'flex';
+        });
+        document.getElementById('closeCarBtn').addEventListener('click', () => {
+            document.getElementById('modalCaracteristicas').style.display = 'none';
+            cargarCaracteristicas();
+            actualizarTabla();
+        });
+        document.getElementById('modalCaracteristicas').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('modalCaracteristicas').style.display = 'none';
+                cargarCaracteristicas();
+                actualizarTabla();
+            }
+        });
+        document.getElementById('addCarBtn').addEventListener('click', () => {
+            const nombre = document.getElementById('newCarNombre').value.trim();
+            const factor = document.getElementById('newCarFactor').value.trim();
+            if (!nombre) { alert('El nombre es obligatorio.'); return; }
+            try {
+                db.run("INSERT INTO caracteristicas (nombre, factor) VALUES (?, ?);", [nombre, factor ? parseFloat(factor) : null]);
+                document.getElementById('newCarNombre').value = '';
+                document.getElementById('newCarFactor').value = '';
+                cargarCaracteristicas();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        });
+
+        function obtenerValoresCaracteristicas() {
+            const selects = document.querySelectorAll('#carInputsContainer .car-select');
+            const valores = {};
+            selects.forEach(sel => {
+                valores[parseInt(sel.dataset.carId)] = sel.value;
+            });
+            return valores;
+        }
+
+        function guardarCaracteristicasUsuario(usuarioId, valores) {
+            for (const [carId, valor] of Object.entries(valores)) {
+                db.run(`INSERT OR REPLACE INTO usuario_caracteristicas (usuario_id, caracteristica_id, valor) VALUES (?, ?, ?);`,
+                    [usuarioId, parseInt(carId), valor]);
+            }
+        }
+
+        const COLORES_GRADO = {
+            S: '#e74c3c', A: '#e67e22', B: '#d4a017', C: '#2ecc71',
+            D: '#00bcd4', E: '#9b59b6', F: '#e91e90'
+        };
+
         // Función para renderizar el contenido de la base de datos en el HTML
         function actualizarTabla() {
             if (!db) return;
 
             try {
-                // Ejecutar la consulta SELECT
                 const res = db.exec("SELECT * FROM usuarios;");
                 const container = document.getElementById('tableContainer');
 
@@ -239,7 +388,18 @@
                 const columnas = res[0].columns;
                 let filas = res[0].values;
 
-                // Ordenar si hay una columna seleccionada
+                // Cargar características de usuarios
+                const carRes = db.exec(`SELECT uc.usuario_id, c.nombre, uc.valor
+                    FROM usuario_caracteristicas uc JOIN caracteristicas c ON uc.caracteristica_id = c.id;`);
+                const userCars = {};
+                if (carRes.length > 0) {
+                    carRes[0].values.forEach(r => {
+                        const uid = r[0];
+                        if (!userCars[uid]) userCars[uid] = [];
+                        userCars[uid].push({ nombre: r[1], valor: r[2] });
+                    });
+                }
+
                 if (sortColumn !== null) {
                     filas.sort((a, b) => {
                         const valA = a[sortColumn];
@@ -262,12 +422,13 @@
                     const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
                 });
-                html += '<th>Acciones</th>';
+                html += '<th>Caract.</th><th>Acciones</th>';
                 html += '</tr></thead><tbody>';
 
                 filas.forEach(fila => {
                     const id = fila[0];
                     const nombreArchivo = fila[colImagen] || null;
+                    const cars = userCars[id] || [];
                     html += '<tr>';
                     fila.forEach((celda, i) => {
                         const colName = columnas[i];
@@ -283,6 +444,18 @@
                             html += `<td>${celda}</td>`;
                         }
                     });
+                    // Columna Caract.
+                    html += '<td class="car-cell" data-id="' + id + '">';
+                    if (cars.length > 0) {
+                        cars.forEach(c => {
+                            const color = COLORES_GRADO[c.valor] || '#333';
+                            html += `<span class="car-badge" style="display:inline-block;margin:1px 4px 1px 0;padding:1px 6px;border-radius:3px;background:${color}20;color:${color};font-weight:bold;font-size:0.85em">${c.nombre}: ${c.valor}</span>`;
+                        });
+                    } else {
+                        html += '<em style="font-size:0.85em;color:#999">—</em>';
+                    }
+                    html += '</td>';
+                    // Columna Acciones
                     html += '<td style="white-space:nowrap">';
                     html += `<button class="edit-btn" data-id="${id}">✏️ Editar</button> `;
                     html += `<button class="img-btn upload-img" data-id="${id}" style="background-color:#e67e22;">🖼️ Subir</button>`;
@@ -315,11 +488,35 @@
                     btn.addEventListener('click', () => {
                         const id = btn.dataset.id;
                         const td = container.querySelector(`td.editable[data-id="${id}"]`);
+                        const carCell = container.querySelector(`td.car-cell[data-id="${id}"]`);
                         const valorActual = td.textContent;
 
                         if (btn.textContent.includes('Editar')) {
                             td.innerHTML = `<input type="text" value="${valorActual}" class="edit-input">`;
                             btn.textContent = '💾 Guardar';
+
+                            // Reemplazar badges con selects
+                            if (carCell && listaCaracteristicas.length > 0) {
+                                const carRes = db.exec(
+                                    "SELECT caracteristica_id, valor FROM usuario_caracteristicas WHERE usuario_id = ?;",
+                                    [parseInt(id)]);
+                                const vals = {};
+                                if (carRes.length > 0) {
+                                    carRes[0].values.forEach(r => { vals[r[0]] = r[1]; });
+                                }
+                                const grados = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
+                                let selHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+                                listaCaracteristicas.forEach(c => {
+                                    const v = vals[c.id] || 'D';
+                                    selHtml += `<label style="font-size:0.85em">${c.nombre}:
+                                        <select class="car-edit-select" data-car-id="${c.id}" style="padding:1px 2px;font-size:0.85em">
+                                            ${grados.map(g => `<option value="${g}" ${g === v ? 'selected' : ''}>${g}</option>`).join('')}
+                                        </select>
+                                    </label>`;
+                                });
+                                selHtml += '</div>';
+                                carCell.innerHTML = selHtml;
+                            }
                         } else {
                             const input = td.querySelector('.edit-input');
                             const nuevoNombre = input.value.trim();
@@ -328,6 +525,16 @@
                                 return;
                             }
                             db.run("UPDATE usuarios SET nombre = ? WHERE id = ?;", [nuevoNombre, id]);
+
+                            // Guardar características editadas
+                            const selects = carCell ? carCell.querySelectorAll('.car-edit-select') : [];
+                            selects.forEach(sel => {
+                                const carId = parseInt(sel.dataset.carId);
+                                const valor = sel.value;
+                                db.run("INSERT OR REPLACE INTO usuario_caracteristicas (usuario_id, caracteristica_id, valor) VALUES (?, ?, ?);",
+                                    [parseInt(id), carId, valor]);
+                            });
+
                             actualizarTabla();
                         }
                     });
@@ -388,12 +595,20 @@
             }
 
             db.run("INSERT INTO usuarios (nombre) VALUES (?);", [nombre]);
+            const newId = db.exec("SELECT last_insert_rowid();");
+            const usuarioId = newId[0].values[0][0];
+
+            // Guardar características
+            const valores = obtenerValoresCaracteristicas();
+            guardarCaracteristicasUsuario(usuarioId, valores);
+
             nombreInput.value = '';
             actualizarTabla();
         });
 
         // Botón: Limpiar tabla
         document.getElementById('clearBtn').addEventListener('click', () => {
+            db.run("DELETE FROM usuario_caracteristicas;");
             db.run("DELETE FROM usuarios;");
             actualizarTabla();
         });
@@ -430,7 +645,15 @@
                 // Inicializamos una nueva base de datos pasando el arreglo de bytes del archivo cargado
                 db = new SQL.Database(Uints);
 
-                alert("¡Archivo .sqlite cargado con éxito!");
+                // Asegurar tablas auxiliares
+                db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
+                db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
+                const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
+                if (cars.length === 0 || cars[0].values[0][0] === 0) {
+                    db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
+                }
+
+                cargarCaracteristicas();
                 actualizarTabla();
             };
             reader.readAsArrayBuffer(file);
