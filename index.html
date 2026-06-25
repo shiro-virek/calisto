@@ -858,26 +858,26 @@
                 let filas = res[0].values;
 
                 // Cargar características de usuarios
-                const carRes = db.exec(`SELECT uc.usuario_id, c.nombre, uc.valor
+                const carRes = db.exec(`SELECT uc.usuario_id, c.nombre, uc.valor, c.factor
                     FROM usuario_caracteristicas uc JOIN caracteristicas c ON uc.caracteristica_id = c.id;`);
                 const userCars = {};
                 if (carRes.length > 0) {
                     carRes[0].values.forEach(r => {
                         const uid = r[0];
                         if (!userCars[uid]) userCars[uid] = [];
-                        userCars[uid].push({ nombre: r[1], valor: r[2] });
+                        userCars[uid].push({ nombre: r[1], valor: r[2], factor: r[3] });
                     });
                 }
 
                 // Cargar etiquetas de usuarios
-                const etqRes = db.exec(`SELECT ue.usuario_id, e.nombre
+                const etqRes = db.exec(`SELECT ue.usuario_id, e.nombre, e.factor
                     FROM usuario_etiquetas ue JOIN etiquetas e ON ue.etiqueta_id = e.id;`);
                 const userEtqs = {};
                 if (etqRes.length > 0) {
                     etqRes[0].values.forEach(r => {
                         const uid = r[0];
                         if (!userEtqs[uid]) userEtqs[uid] = [];
-                        userEtqs[uid].push(r[1]);
+                        userEtqs[uid].push({ nombre: r[1], factor: r[2] });
                     });
                 }
 
@@ -902,6 +902,45 @@
                     });
                 }
 
+                // Puntaje: cargar opciones de campos personalizados para el cálculo
+                const allCampOpts = {};
+                listaCampoPersonalizado.forEach(c => {
+                    if (c.tipo === 'lista_unico' || c.tipo === 'lista_multiple') {
+                        allCampOpts[c.id] = obtenerOpcionesCampo(c.id);
+                    }
+                });
+
+                const GRADE_VALS = { S: 5, A: 4, B: 3, C: 2, D: 1, E: -1, F: -2 };
+
+                function calcularPuntaje(uid) {
+                    let score = 0;
+                    (userCars[uid] || []).forEach(c => {
+                        const factor = c.factor != null ? c.factor : 1;
+                        const gv = GRADE_VALS[c.valor] || 0;
+                        score += factor * gv;
+                    });
+
+                    (listaCampoPersonalizado || []).forEach(c => {
+                        if (c.tipo !== 'lista_unico' && c.tipo !== 'lista_multiple') return;
+                        const cv = userCampVals[uid] || {};
+                        const val = cv[c.id];
+                        if (val === undefined) return;
+                        const selectedIds = String(val).split(',').filter(Boolean);
+                        const opts = allCampOpts[c.id] || [];
+                        const sel = opts.filter(o => selectedIds.includes(String(o.id)));
+                        if (sel.length > 0) {
+                            const sum = sel.reduce((a, o) => a + (o.factor != null ? o.factor : 1), 0);
+                            score *= sum / sel.length;
+                        }
+                    });
+
+                    (userEtqs[uid] || []).forEach(e => {
+                        score *= (e.factor != null ? e.factor : 1);
+                    });
+
+                    return Math.round(score * 100) / 100;
+                }
+
                 const colNombre = columnas.indexOf('nombre');
                 const colImagen = columnas.indexOf('imagen');
 
@@ -914,7 +953,7 @@
                     const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
                 });
-                html += '<th>Caract.</th><th>Etiquetas</th><th>Camp. Pers.</th><th>Acciones</th>';
+                html += '<th>Puntaje</th><th>Caract.</th><th>Etiquetas</th><th>Camp. Pers.</th><th>Acciones</th>';
                 html += '</tr></thead><tbody>';
 
                 filas.forEach(fila => {
@@ -936,6 +975,9 @@
                             html += `<td>${celda}</td>`;
                         }
                     });
+                    // Columna Puntaje
+                    const puntaje = calcularPuntaje(id);
+                    html += `<td style="font-weight:bold;text-align:center">${puntaje}</td>`;
                     // Columna Caract.
                     html += '<td class="car-cell" data-id="' + id + '">';
                     if (cars.length > 0) {
@@ -952,7 +994,7 @@
                     const etqs = userEtqs[id] || [];
                     if (etqs.length > 0) {
                         etqs.forEach(t => {
-                            html += `<span class="tag-badge">${t}</span>`;
+                            html += `<span class="tag-badge">${t.nombre}</span>`;
                         });
                     } else {
                         html += '<em style="font-size:0.85em;color:#999">—</em>';
