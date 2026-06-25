@@ -79,7 +79,7 @@
 </head>
 <body>
 
-    <h1>SQLite en el Navegador (`sql.js`)</h1>
+    <h1>Database</h1>
 
     <div class="card">
         <h3>1. Gestión del Archivo de Base de Datos</h3>
@@ -367,19 +367,43 @@
             tbody.innerHTML = '';
             listaCaracteristicas.forEach(c => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${c.nombre}</td><td>${c.factor !== null ? c.factor : '-'}</td>
-                    <td><button class="del-car-btn" data-id="${c.id}" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tr.dataset.id = c.id;
+                tr.innerHTML = `<td class="car-name">${c.nombre}</td><td class="car-factor">${c.factor !== null ? c.factor : '-'}</td>
+                    <td><button class="edit-car-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
+                    <button class="del-car-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
                 tbody.appendChild(tr);
+            });
+            document.querySelectorAll('.edit-car-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    const id = parseInt(tr.dataset.id);
+                    const nameTd = tr.querySelector('.car-name');
+                    const factorTd = tr.querySelector('.car-factor');
+                    if (btn.textContent === '✏️') {
+                        const curName = nameTd.textContent;
+                        const curFactor = factorTd.textContent === '-' ? '' : factorTd.textContent;
+                        nameTd.innerHTML = `<input type="text" class="car-edit-name" value="${curName}" style="width:90%">`;
+                        factorTd.innerHTML = `<input type="number" class="car-edit-factor" value="${curFactor}" step="0.01" style="width:70px">`;
+                        btn.textContent = '💾';
+                    } else {
+                        const newName = nameTd.querySelector('.car-edit-name').value.trim();
+                        const newFactor = factorTd.querySelector('.car-edit-factor').value.trim();
+                        if (!newName) { alert('El nombre es obligatorio.'); return; }
+                        db.run("UPDATE caracteristicas SET nombre = ?, factor = ? WHERE id = ?;",
+                            [newName, newFactor ? parseFloat(newFactor) : null, id]);
+                        cargarCaracteristicas();
+                        actualizarTabla();
+                    }
+                });
             });
             document.querySelectorAll('.del-car-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (!confirm('¿Eliminar esta característica?')) return;
-                    const id = parseInt(btn.dataset.id);
+                    const id = parseInt(btn.closest('tr').dataset.id);
                     db.run("DELETE FROM usuario_caracteristicas WHERE caracteristica_id = ?;", [id]);
                     db.run("DELETE FROM caracteristicas WHERE id = ?;", [id]);
-                cargarCaracteristicas();
-                cargarEtiquetas();
-                actualizarTabla();
+                    cargarCaracteristicas();
+                    actualizarTabla();
                 });
             });
         }
@@ -469,15 +493,45 @@
             tbody.innerHTML = '';
             listaEtiquetas.forEach(e => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${e.nombre}</td><td>${e.factor !== null ? e.factor : '-'}</td>
-                    <td>${e.descripcion || ''}</td>
-                    <td><button class="del-etq-btn" data-id="${e.id}" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tr.dataset.id = e.id;
+                tr.innerHTML = `<td class="etq-name">${e.nombre}</td><td class="etq-factor">${e.factor !== null ? e.factor : '-'}</td>
+                    <td class="etq-desc">${e.descripcion || ''}</td>
+                    <td><button class="edit-etq-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
+                    <button class="del-etq-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
                 tbody.appendChild(tr);
+            });
+            document.querySelectorAll('.edit-etq-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    const id = parseInt(tr.dataset.id);
+                    const nameTd = tr.querySelector('.etq-name');
+                    const factorTd = tr.querySelector('.etq-factor');
+                    const descTd = tr.querySelector('.etq-desc');
+                    if (btn.textContent === '✏️') {
+                        nameTd.innerHTML = `<input type="text" class="etq-edit-name" value="${nameTd.textContent}" style="width:90%">`;
+                        factorTd.innerHTML = `<input type="number" class="etq-edit-factor" value="${factorTd.textContent === '-' ? '' : factorTd.textContent}" step="0.01" style="width:70px">`;
+                        descTd.innerHTML = `<input type="text" class="etq-edit-desc" value="${descTd.textContent}" style="width:90%">`;
+                        btn.textContent = '💾';
+                    } else {
+                        const newName = nameTd.querySelector('.etq-edit-name').value.trim().toUpperCase();
+                        const newFactor = factorTd.querySelector('.etq-edit-factor').value.trim();
+                        const newDesc = descTd.querySelector('.etq-edit-desc').value.trim();
+                        if (!newName) { alert('El nombre es obligatorio.'); return; }
+                        if (!/^[A-Z0-9_]+$/.test(newName)) {
+                            alert('Solo se permiten mayúsculas, números y guión bajo.');
+                            return;
+                        }
+                        db.run("UPDATE etiquetas SET nombre = ?, factor = ?, descripcion = ? WHERE id = ?;",
+                            [newName, newFactor ? parseFloat(newFactor) : null, newDesc || null, id]);
+                        cargarEtiquetas();
+                        actualizarTabla();
+                    }
+                });
             });
             document.querySelectorAll('.del-etq-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (!confirm('¿Eliminar esta etiqueta?')) return;
-                    const id = parseInt(btn.dataset.id);
+                    const id = parseInt(btn.closest('tr').dataset.id);
                     db.run("DELETE FROM usuario_etiquetas WHERE etiqueta_id = ?;", [id]);
                     db.run("DELETE FROM etiquetas WHERE id = ?;", [id]);
                     cargarEtiquetas();
@@ -580,15 +634,38 @@
                 const isLista = c.tipo === 'lista_unico' || c.tipo === 'lista_multiple';
                 let tipoLabel = { texto: 'Texto', lista_unico: 'Lista (único)', lista_multiple: 'Lista (múltiple)' }[c.tipo] || c.tipo;
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${c.nombre}</td><td>${c.descripcion || ''}</td><td>${tipoLabel}</td>
-                    <td>${isLista ? `<button class="opc-camp-btn" data-id="${c.id}" style="padding:2px 6px;font-size:0.85em">📋 Opciones</button>` : '—'}</td>
-                    <td><button class="del-camp-btn" data-id="${c.id}" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tr.dataset.id = c.id;
+                tr.innerHTML = `<td class="camp-nombre">${c.nombre}</td><td class="camp-desc">${c.descripcion || ''}</td><td class="camp-tipo">${tipoLabel}</td>
+                    <td>${isLista ? `<button class="opc-camp-btn" style="padding:2px 6px;font-size:0.85em">📋 Opciones</button>` : '—'}</td>
+                    <td><button class="edit-camp-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
+                    <button class="del-camp-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
                 tbody.appendChild(tr);
+            });
+            document.querySelectorAll('.edit-camp-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    const id = parseInt(tr.dataset.id);
+                    const nameTd = tr.querySelector('.camp-nombre');
+                    const descTd = tr.querySelector('.camp-desc');
+                    if (btn.textContent === '✏️') {
+                        nameTd.innerHTML = `<input type="text" class="camp-edit-nombre" value="${nameTd.textContent}" style="width:90%">`;
+                        descTd.innerHTML = `<input type="text" class="camp-edit-desc" value="${descTd.textContent}" style="width:90%">`;
+                        btn.textContent = '💾';
+                    } else {
+                        const newName = nameTd.querySelector('.camp-edit-nombre').value.trim();
+                        const newDesc = descTd.querySelector('.camp-edit-desc').value.trim();
+                        if (!newName) { alert('El nombre es obligatorio.'); return; }
+                        db.run("UPDATE campos_personalizados SET nombre = ?, descripcion = ? WHERE id = ?;",
+                            [newName, newDesc || null, id]);
+                        cargarCamposPersonalizados();
+                        actualizarTabla();
+                    }
+                });
             });
             document.querySelectorAll('.del-camp-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (!confirm('¿Eliminar este campo? También se eliminarán sus opciones y valores asociados.')) return;
-                    const id = parseInt(btn.dataset.id);
+                    const id = parseInt(btn.closest('tr').dataset.id);
                     db.run("DELETE FROM usuario_campo_valor WHERE campo_id = ?;", [id]);
                     db.run("DELETE FROM opciones_campo WHERE campo_id = ?;", [id]);
                     db.run("DELETE FROM campos_personalizados WHERE id = ?;", [id]);
@@ -598,7 +675,7 @@
             });
             document.querySelectorAll('.opc-camp-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = parseInt(btn.dataset.id);
+                    const id = parseInt(btn.closest('tr').dataset.id);
                     mostrarOpcionesCampo(id);
                 });
             });
@@ -612,8 +689,9 @@
             const opts = obtenerOpcionesCampo(campoId);
             let html = '<table style="width:100%;margin-bottom:4px"><thead><tr><th>Valor</th><th>Factor</th><th></th></tr></thead><tbody>';
             opts.forEach(o => {
-                html += `<tr><td>${o.valor}</td><td>${o.factor !== null ? o.factor : '-'}</td>
-                    <td><button class="del-opc-btn" data-id="${o.id}" style="padding:1px 5px;font-size:0.8em;background-color:#e74c3c;">✖</button></td></tr>`;
+                html += `<tr data-id="${o.id}"><td class="opc-val">${o.valor}</td><td class="opc-factor">${o.factor !== null ? o.factor : '-'}</td>
+                    <td><button class="edit-opc-btn" style="padding:1px 5px;font-size:0.8em">✏️</button>
+                    <button class="del-opc-btn" style="padding:1px 5px;font-size:0.8em;background-color:#e74c3c;">✖</button></td></tr>`;
             });
             html += '</tbody></table>';
             html += `<div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -635,9 +713,31 @@
                 cargarCamposPersonalizados();
             });
 
+            document.querySelectorAll('.edit-opc-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    const id = parseInt(tr.dataset.id);
+                    const valTd = tr.querySelector('.opc-val');
+                    const factorTd = tr.querySelector('.opc-factor');
+                    if (btn.textContent === '✏️') {
+                        valTd.innerHTML = `<input type="text" class="opc-edit-val" value="${valTd.textContent}" style="width:90%">`;
+                        factorTd.innerHTML = `<input type="number" class="opc-edit-factor" value="${factorTd.textContent === '-' ? '' : factorTd.textContent}" step="0.01" style="width:70px">`;
+                        btn.textContent = '💾';
+                    } else {
+                        const newVal = valTd.querySelector('.opc-edit-val').value.trim();
+                        const newFactor = factorTd.querySelector('.opc-edit-factor').value.trim();
+                        if (!newVal) { alert('El valor es obligatorio.'); return; }
+                        db.run("UPDATE opciones_campo SET valor = ?, factor = ? WHERE id = ?;",
+                            [newVal, newFactor ? parseFloat(newFactor) : null, id]);
+                        mostrarOpcionesCampo(editingCampoOpciones);
+                        cargarCamposPersonalizados();
+                    }
+                });
+            });
+
             document.querySelectorAll('.del-opc-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = parseInt(btn.dataset.id);
+                    const id = parseInt(btn.closest('tr').dataset.id);
                     db.run("DELETE FROM opciones_campo WHERE id = ?;", [id]);
                     mostrarOpcionesCampo(editingCampoOpciones);
                     cargarCamposPersonalizados();
