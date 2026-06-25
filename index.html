@@ -70,7 +70,9 @@
 
     <div class="card">
         <h3>2. Operaciones de Base de Datos</h3>
-        <button id="insertBtn">➕ Insertar Registro Aleatorio</button>
+        <label for="nombreInput">Nombre:</label>
+        <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
+        <button id="insertBtn">➕ Insertar</button>
         <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
     </div>
 
@@ -137,12 +139,18 @@
             }
         }
 
-        // Botón: Insertar registro aleatorio
+        // Botón: Insertar registro con el nombre del input
         document.getElementById('insertBtn').addEventListener('click', () => {
-            const nombres = ['Ana', 'Carlos', 'Sofía', 'Mateo', 'Lucía', 'Diego', 'Elena'];
-            const nombreAleatorio = nombres[Math.floor(Math.random() * nombres.length)];
+            const nombreInput = document.getElementById('nombreInput');
+            const nombre = nombreInput.value.trim();
 
-            db.run("INSERT INTO usuarios (nombre) VALUES (?);", [nombreAleatorio]);
+            if (!nombre) {
+                alert("Por favor ingresa un nombre.");
+                return;
+            }
+
+            db.run("INSERT INTO usuarios (nombre) VALUES (?);", [nombre]);
+            nombreInput.value = '';
             actualizarTabla();
         });
 
