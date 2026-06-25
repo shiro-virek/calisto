@@ -48,6 +48,8 @@
         th { background-color: #f2f2f2; }
         .edit-btn { padding: 4px 8px; font-size: 0.85em; margin: 0; }
         .edit-input { width: 90%; padding: 4px; }
+        .img-btn { padding: 4px 8px; font-size: 0.85em; margin: 2px 0; }
+        .img-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; cursor: pointer; }
         pre {
             background: #272822;
             color: #f8f8f2;
@@ -71,7 +73,14 @@
     </div>
 
     <div class="card">
-        <h3>2. Operaciones de Base de Datos</h3>
+        <h3>2. Carpeta de Imágenes</h3>
+        <p>Selecciona una carpeta donde se guardarán las imágenes asociadas a los registros.</p>
+        <button id="pickDirBtn">📁 Seleccionar Carpeta</button>
+        <span id="dirStatus" style="margin-left:10px;color:#999;">Ninguna carpeta seleccionada</span>
+    </div>
+
+    <div class="card">
+        <h3>3. Operaciones de Base de Datos</h3>
         <label for="nombreInput">Nombre:</label>
         <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
         <button id="insertBtn">➕ Insertar</button>
@@ -79,8 +88,17 @@
     </div>
 
     <div class="card">
-        <h3>3. Contenido Actual de la Tabla `usuarios`</h3>
+        <h3>4. Contenido Actual de la Tabla `usuarios`</h3>
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
+    </div>
+
+    <input type="file" id="imageInput" accept="image/*" style="display:none">
+    <div id="imageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; max-width:90%; max-height:90%;">
+            <button id="closeModalBtn" style="margin-bottom:10px;">✖ Cerrar</button>
+            <br>
+            <img id="modalImage" style="max-width:100%; max-height:80vh;">
+        </div>
     </div>
 
     <script>
@@ -100,13 +118,109 @@
             db = new SQL.Database();
 
             // Crear una tabla de prueba inicial
-            db.run("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+            db.run("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, imagen TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
 
             actualizarTabla();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
 
         let sortColumn = null;
         let sortAsc = true;
+        let baseDirHandle = null;
+        let imagesDirHandle = null;
+        let uploadImageId = null;
+
+        // Inicializar carpeta de imágenes
+        document.getElementById('pickDirBtn').addEventListener('click', async () => {
+            try {
+                baseDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                imagesDirHandle = await baseDirHandle.getDirectoryHandle('images', { create: true });
+                document.getElementById('dirStatus').textContent = '✅ Carpeta: ' + baseDirHandle.name + '/images';
+                document.getElementById('dirStatus').style.color = '#2ecc71';
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    alert('Error al seleccionar carpeta: ' + err.message);
+                }
+            }
+        });
+
+        // File System Access API: guardar imagen
+        async function guardarImagenFS(blob, nombreArchivo) {
+            if (!imagesDirHandle) throw new Error('No hay carpeta de imágenes seleccionada');
+            const fileHandle = await imagesDirHandle.getFileHandle(nombreArchivo, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+        }
+
+        // File System Access API: leer imagen y devolver URL
+        async function obtenerURLImagen(nombreArchivo) {
+            if (!imagesDirHandle) throw new Error('No hay carpeta de imágenes seleccionada');
+            const fileHandle = await imagesDirHandle.getFileHandle(nombreArchivo);
+            const file = await fileHandle.getFile();
+            return URL.createObjectURL(file);
+        }
+
+        // File System Access API: eliminar imagen
+        async function eliminarImagenFS(nombreArchivo) {
+            if (!imagesDirHandle) return;
+            try {
+                await imagesDirHandle.removeEntry(nombreArchivo);
+            } catch (_) {}
+        }
+
+        // Manejar subida de imagen desde input
+        document.getElementById('imageInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file || uploadImageId === null) return;
+
+            try {
+                if (!imagesDirHandle) {
+                    alert('Primero selecciona una carpeta de imágenes en la sección 2.');
+                    return;
+                }
+
+                const stmt = db.prepare("SELECT nombre, imagen FROM usuarios WHERE id = ?");
+                stmt.bind([uploadImageId]);
+                if (!stmt.step()) {
+                    alert('Registro no encontrado.');
+                    stmt.free();
+                    return;
+                }
+                const row = stmt.getAsObject();
+                stmt.free();
+
+                const nombreActual = row.nombre;
+                const imagenActual = row.imagen;
+
+                if (imagenActual) {
+                    await eliminarImagenFS(imagenActual);
+                }
+
+                const ext = file.name.split('.').pop() || 'png';
+                const randomId = Math.random().toString(36).substring(2, 10);
+                const nombreArchivo = `${nombreActual}_${randomId}.${ext}`;
+                const blob = new Blob([await file.arrayBuffer()], { type: file.type });
+
+                await guardarImagenFS(blob, nombreArchivo);
+                db.run("UPDATE usuarios SET imagen = ? WHERE id = ?;", [nombreArchivo, uploadImageId]);
+                actualizarTabla();
+            } catch (err) {
+                alert('Error al subir la imagen: ' + err.message);
+            }
+
+            uploadImageId = null;
+            e.target.value = '';
+        });
+
+        // Cerrar modal de imagen
+        document.getElementById('closeModalBtn').addEventListener('click', () => {
+            document.getElementById('imageModal').style.display = 'none';
+        });
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('imageModal').style.display = 'none';
+            }
+        });
 
         // Función para renderizar el contenido de la base de datos en el HTML
         function actualizarTabla() {
@@ -137,9 +251,14 @@
                 }
 
                 const colNombre = columnas.indexOf('nombre');
+                const colImagen = columnas.indexOf('imagen');
 
                 let html = '<table><thead><tr>';
                 columnas.forEach((col, i) => {
+                    if (col === 'imagen') {
+                        html += '<th>Imagen</th>';
+                        return;
+                    }
                     const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
                 });
@@ -148,15 +267,29 @@
 
                 filas.forEach(fila => {
                     const id = fila[0];
+                    const nombreArchivo = fila[colImagen] || null;
                     html += '<tr>';
                     fila.forEach((celda, i) => {
-                        if (i === colNombre) {
+                        const colName = columnas[i];
+                        if (colName === 'imagen') {
+                            if (celda) {
+                                html += `<td><img class="img-thumb view-img" data-file="${celda}" src="" title="${celda}"></td>`;
+                            } else {
+                                html += '<td><em>Sin imagen</em></td>';
+                            }
+                        } else if (i === colNombre) {
                             html += `<td class="editable" data-id="${id}" data-col="${i}">${celda}</td>`;
                         } else {
                             html += `<td>${celda}</td>`;
                         }
                     });
-                    html += `<td><button class="edit-btn" data-id="${id}">✏️ Editar</button></td>`;
+                    html += '<td style="white-space:nowrap">';
+                    html += `<button class="edit-btn" data-id="${id}">✏️ Editar</button> `;
+                    html += `<button class="img-btn upload-img" data-id="${id}" style="background-color:#e67e22;">🖼️ Subir</button>`;
+                    if (nombreArchivo) {
+                        html += ` <button class="img-btn view-img-btn" data-file="${nombreArchivo}" style="background-color:#2ecc71;">👁️ Ver</button>`;
+                    }
+                    html += '</td>';
                     html += '</tr>';
                 });
                 html += '</tbody></table>';
@@ -196,6 +329,46 @@
                             }
                             db.run("UPDATE usuarios SET nombre = ? WHERE id = ?;", [nuevoNombre, id]);
                             actualizarTabla();
+                        }
+                    });
+                });
+
+                // Asignar eventos a los botones de subir imagen
+                container.querySelectorAll('.upload-img').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        uploadImageId = parseInt(btn.dataset.id);
+                        document.getElementById('imageInput').click();
+                    });
+                });
+
+                // Asignar eventos a los botones de ver imagen
+                container.querySelectorAll('.view-img-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const url = await obtenerURLImagen(btn.dataset.file);
+                            document.getElementById('modalImage').src = url;
+                            document.getElementById('imageModal').style.display = 'flex';
+                        } catch (err) {
+                            alert('Error al cargar la imagen: ' + err.message);
+                        }
+                    });
+                });
+
+                // Cargar thumbnails y asignar click
+                container.querySelectorAll('.view-img').forEach(img => {
+                    (async () => {
+                        try {
+                            const url = await obtenerURLImagen(img.dataset.file);
+                            img.src = url;
+                        } catch (_) {}
+                    })();
+                    img.addEventListener('click', async () => {
+                        try {
+                            const url = await obtenerURLImagen(img.dataset.file);
+                            document.getElementById('modalImage').src = url;
+                            document.getElementById('imageModal').style.display = 'flex';
+                        } catch (err) {
+                            alert('Error al cargar la imagen: ' + err.message);
                         }
                     });
                 });
