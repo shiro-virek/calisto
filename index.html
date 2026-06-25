@@ -46,6 +46,8 @@
             text-align: left;
         }
         th { background-color: #f2f2f2; }
+        .edit-btn { padding: 4px 8px; font-size: 0.85em; margin: 0; }
+        .edit-input { width: 90%; padding: 4px; }
         pre {
             background: #272822;
             color: #f8f8f2;
@@ -134,17 +136,27 @@
                     });
                 }
 
-                // Construir la tabla HTML dinámicamente
+                const colNombre = columnas.indexOf('nombre');
+
                 let html = '<table><thead><tr>';
                 columnas.forEach((col, i) => {
                     const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
                 });
+                html += '<th>Acciones</th>';
                 html += '</tr></thead><tbody>';
 
                 filas.forEach(fila => {
+                    const id = fila[0];
                     html += '<tr>';
-                    fila.forEach(celda => html += `<td>${celda}</td>`);
+                    fila.forEach((celda, i) => {
+                        if (i === colNombre) {
+                            html += `<td class="editable" data-id="${id}" data-col="${i}">${celda}</td>`;
+                        } else {
+                            html += `<td>${celda}</td>`;
+                        }
+                    });
+                    html += `<td><button class="edit-btn" data-id="${id}">✏️ Editar</button></td>`;
                     html += '</tr>';
                 });
                 html += '</tbody></table>';
@@ -162,6 +174,29 @@
                             sortAsc = true;
                         }
                         actualizarTabla();
+                    });
+                });
+
+                // Asignar eventos a los botones de editar/guardar
+                container.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const td = container.querySelector(`td.editable[data-id="${id}"]`);
+                        const valorActual = td.textContent;
+
+                        if (btn.textContent.includes('Editar')) {
+                            td.innerHTML = `<input type="text" value="${valorActual}" class="edit-input">`;
+                            btn.textContent = '💾 Guardar';
+                        } else {
+                            const input = td.querySelector('.edit-input');
+                            const nuevoNombre = input.value.trim();
+                            if (!nuevoNombre) {
+                                alert("El nombre no puede estar vacío.");
+                                return;
+                            }
+                            db.run("UPDATE usuarios SET nombre = ? WHERE id = ?;", [nuevoNombre, id]);
+                            actualizarTabla();
+                        }
                     });
                 });
             } catch (e) {
