@@ -7,9 +7,9 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 0 20px;
+            max-width: 98%;
+            margin: 20px auto;
+            padding: 0 16px;
             background-color: #f4f6f9;
             color: #333;
         }
@@ -106,6 +106,43 @@
         <button id="gestionEtqBtn">🏷️ Gestionar Etiquetas</button>
     </div>
 
+    <div class="card">
+        <h3>5. Campos Personalizados</h3>
+        <p>Define campos dinámicos para los usuarios (texto libre, lista única o lista múltiple).</p>
+        <button id="gestionCampBtn">🔧 Gestionar Campos</button>
+    </div>
+
+    <div id="modalCampos" class="modal-overlay">
+        <div class="modal-content" style="max-width:800px">
+            <h3>Gestión de Campos Personalizados</h3>
+            <div id="camposListContainer">
+                <table id="camposTable" style="margin-bottom:10px">
+                    <thead><tr><th>Nombre</th><th>Descripción</th><th>Tipo</th><th>Opciones</th><th></th></tr></thead>
+                    <tbody id="camposTableBody"></tbody>
+                </table>
+            </div>
+            <div style="border-top:1px solid #ddd;padding-top:10px;margin-top:6px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+                    <input type="text" id="newCampNombre" placeholder="Nombre del campo" style="flex:2">
+                    <input type="text" id="newCampDesc" placeholder="Descripción" style="flex:2">
+                    <select id="newCampTipo" style="flex:1">
+                        <option value="texto">Texto libre</option>
+                        <option value="lista_unico">Lista (único)</option>
+                        <option value="lista_multiple">Lista (múltiple)</option>
+                    </select>
+                    <button id="addCampBtn">➕ Añadir Campo</button>
+                </div>
+                <div id="opcionesCampoContainer" style="display:none;border:1px solid #ddd;padding:8px;border-radius:4px;margin-top:4px">
+                    <strong>Opciones del campo:</strong>
+                    <div id="opcionesCampoContent" style="margin-top:4px"></div>
+                </div>
+            </div>
+            <div style="margin-top:8px">
+                <button id="closeCampBtn" style="background-color:#e74c3c;">✖ Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modalEtiquetas" class="modal-overlay">
         <div class="modal-content">
             <h3>Gestión de Etiquetas</h3>
@@ -140,17 +177,18 @@
     </div>
 
     <div class="card">
-        <h3>5. Operaciones de Base de Datos</h3>
+        <h3>6. Operaciones de Base de Datos</h3>
         <label for="nombreInput">Nombre:</label>
         <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
         <div id="carInputsContainer" style="margin-top:8px"></div>
         <div id="etqInputsContainer" style="margin-top:8px"></div>
+        <div id="campInputsContainer" style="margin-top:8px"></div>
         <button id="insertBtn" style="margin-top:8px">➕ Insertar</button>
         <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
     </div>
 
     <div class="card">
-        <h3>6. Contenido Actual de la Tabla `usuarios`</h3>
+        <h3>7. Contenido Actual de la Tabla `usuarios`</h3>
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
     </div>
 
@@ -185,6 +223,12 @@
             db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
                 db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
                 db.run("CREATE TABLE IF NOT EXISTS usuario_etiquetas (usuario_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (usuario_id, etiqueta_id));");
+                db.run("CREATE TABLE IF NOT EXISTS campos_personalizados (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, descripcion TEXT, tipo TEXT CHECK(tipo IN ('texto','lista_unico','lista_multiple')));");
+                db.run("CREATE TABLE IF NOT EXISTS opciones_campo (id INTEGER PRIMARY KEY AUTOINCREMENT, campo_id INTEGER REFERENCES campos_personalizados(id), valor TEXT, factor REAL);");
+                db.run("CREATE TABLE IF NOT EXISTS usuario_campo_valor (usuario_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, campo_id));");
+            db.run("CREATE TABLE IF NOT EXISTS campos_personalizados (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, descripcion TEXT, tipo TEXT CHECK(tipo IN ('texto','lista_unico','lista_multiple')));");
+            db.run("CREATE TABLE IF NOT EXISTS opciones_campo (id INTEGER PRIMARY KEY AUTOINCREMENT, campo_id INTEGER REFERENCES campos_personalizados(id), valor TEXT, factor REAL);");
+            db.run("CREATE TABLE IF NOT EXISTS usuario_campo_valor (usuario_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, campo_id));");
 
             // Insertar característica por defecto
             const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
@@ -192,9 +236,10 @@
                 db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
             }
 
-            cargarCaracteristicas();
-            cargarEtiquetas();
-            actualizarTabla();
+                cargarCaracteristicas();
+                cargarEtiquetas();
+                cargarCamposPersonalizados();
+                actualizarTabla();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
 
         let sortColumn = null;
@@ -500,6 +545,208 @@
             });
         }
 
+        // CRUD Campos Personalizados
+        let listaCampoPersonalizado = [];
+        let editingCampoOpciones = null;
+
+        function cargarCamposPersonalizados() {
+            const res = db.exec("SELECT id, nombre, descripcion, tipo FROM campos_personalizados ORDER BY id;");
+            listaCampoPersonalizado = [];
+            if (res.length > 0) {
+                listaCampoPersonalizado = res[0].values.map(r => ({ id: r[0], nombre: r[1], descripcion: r[2], tipo: r[3] }));
+            }
+            renderizarCamposPersonalizados();
+            renderizarInputsCampos();
+        }
+
+        function obtenerOpcionesCampo(campoId) {
+            const res = db.exec("SELECT id, valor, factor FROM opciones_campo WHERE campo_id = ? ORDER BY id;", [campoId]);
+            if (res.length === 0) return [];
+            return res[0].values.map(r => ({ id: r[0], valor: r[1], factor: r[2] }));
+        }
+
+        function renderizarCamposPersonalizados() {
+            const tbody = document.getElementById('camposTableBody');
+            tbody.innerHTML = '';
+            listaCampoPersonalizado.forEach(c => {
+                const isLista = c.tipo === 'lista_unico' || c.tipo === 'lista_multiple';
+                let tipoLabel = { texto: 'Texto', lista_unico: 'Lista (único)', lista_multiple: 'Lista (múltiple)' }[c.tipo] || c.tipo;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${c.nombre}</td><td>${c.descripcion || ''}</td><td>${tipoLabel}</td>
+                    <td>${isLista ? `<button class="opc-camp-btn" data-id="${c.id}" style="padding:2px 6px;font-size:0.85em">📋 Opciones</button>` : '—'}</td>
+                    <td><button class="del-camp-btn" data-id="${c.id}" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tbody.appendChild(tr);
+            });
+            document.querySelectorAll('.del-camp-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!confirm('¿Eliminar este campo? También se eliminarán sus opciones y valores asociados.')) return;
+                    const id = parseInt(btn.dataset.id);
+                    db.run("DELETE FROM usuario_campo_valor WHERE campo_id = ?;", [id]);
+                    db.run("DELETE FROM opciones_campo WHERE campo_id = ?;", [id]);
+                    db.run("DELETE FROM campos_personalizados WHERE id = ?;", [id]);
+                    cargarCamposPersonalizados();
+                    actualizarTabla();
+                });
+            });
+            document.querySelectorAll('.opc-camp-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.dataset.id);
+                    mostrarOpcionesCampo(id);
+                });
+            });
+        }
+
+        function mostrarOpcionesCampo(campoId) {
+            editingCampoOpciones = campoId;
+            const container = document.getElementById('opcionesCampoContainer');
+            const content = document.getElementById('opcionesCampoContent');
+            container.style.display = 'block';
+            const opts = obtenerOpcionesCampo(campoId);
+            let html = '<table style="width:100%;margin-bottom:4px"><thead><tr><th>Valor</th><th>Factor</th><th></th></tr></thead><tbody>';
+            opts.forEach(o => {
+                html += `<tr><td>${o.valor}</td><td>${o.factor !== null ? o.factor : '-'}</td>
+                    <td><button class="del-opc-btn" data-id="${o.id}" style="padding:1px 5px;font-size:0.8em;background-color:#e74c3c;">✖</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            html += `<div style="display:flex;gap:4px;flex-wrap:wrap">
+                <input type="text" id="newOpcValor" placeholder="Valor" style="flex:2">
+                <input type="number" id="newOpcFactor" placeholder="Factor" step="0.01" style="flex:1">
+                <button id="addOpcBtn" style="padding:4px 10px;font-size:0.85em">➕ Añadir Opción</button>
+            </div>`;
+            content.innerHTML = html;
+
+            document.getElementById('addOpcBtn').addEventListener('click', () => {
+                const valor = document.getElementById('newOpcValor').value.trim();
+                const factor = document.getElementById('newOpcFactor').value.trim();
+                if (!valor) { alert('El valor es obligatorio.'); return; }
+                db.run("INSERT INTO opciones_campo (campo_id, valor, factor) VALUES (?, ?, ?);",
+                    [editingCampoOpciones, valor, factor ? parseFloat(factor) : null]);
+                document.getElementById('newOpcValor').value = '';
+                document.getElementById('newOpcFactor').value = '';
+                mostrarOpcionesCampo(editingCampoOpciones);
+                cargarCamposPersonalizados();
+            });
+
+            document.querySelectorAll('.del-opc-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.dataset.id);
+                    db.run("DELETE FROM opciones_campo WHERE id = ?;", [id]);
+                    mostrarOpcionesCampo(editingCampoOpciones);
+                    cargarCamposPersonalizados();
+                });
+            });
+        }
+
+        function renderizarInputsCampos(savedValues = {}) {
+            const container = document.getElementById('campInputsContainer');
+            container.innerHTML = '';
+            if (listaCampoPersonalizado.length === 0) return;
+            let html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+            listaCampoPersonalizado.forEach(c => {
+                if (c.tipo === 'texto') {
+                    const val = savedValues[c.id] || '';
+                    html += `<label style="display:flex;flex-direction:column;gap:2px;font-size:0.9em">
+                        ${c.nombre} <input type="text" class="camp-input-text" data-camp-id="${c.id}" value="${val}" style="padding:2px 6px">
+                    </label>`;
+                } else {
+                    const opts = obtenerOpcionesCampo(c.id);
+                    const isMulti = c.tipo === 'lista_multiple';
+                    const saved = savedValues[c.id] ? savedValues[c.id].split(',').filter(Boolean) : [];
+                    html += `<fieldset style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;margin:0">
+                        <legend style="font-size:0.85em">${c.nombre} ${isMulti ? '(múltiple)' : ''}</legend>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px">`;
+                    opts.forEach(o => {
+                        const oid = String(o.id);
+                        if (isMulti) {
+                            const checked = saved.includes(oid) ? 'checked' : '';
+                            html += `<label style="font-size:0.85em;white-space:nowrap">
+                                <input type="checkbox" class="camp-input-chk" data-camp-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.valor}
+                            </label>`;
+                        } else {
+                            const selected = saved.includes(oid) ? 'selected' : '';
+                            html += `<label style="font-size:0.85em;white-space:nowrap">
+                                <input type="radio" class="camp-input-radio" name="camp_radio_${c.id}" data-camp-id="${c.id}" data-opt-id="${o.id}" ${selected ? 'checked' : ''}> ${o.valor}
+                            </label>`;
+                        }
+                    });
+                    if (!isMulti && opts.length > 0) {
+                        // Ensure at least one radio is checked
+                        const hasChecked = opts.some(o => saved.includes(String(o.id)));
+                        if (!hasChecked) {
+                            html += `<label style="font-size:0.85em;white-space:nowrap;color:#999">
+                                <input type="radio" class="camp-input-radio" name="camp_radio_${c.id}" data-camp-id="${c.id}" data-opt-id="" checked> (ninguno)
+                            </label>`;
+                        }
+                    }
+                    html += '</div></fieldset>';
+                }
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function obtenerValoresCamposPersonalizados() {
+            const vals = {};
+            document.querySelectorAll('.camp-input-text').forEach(inp => {
+                vals[parseInt(inp.dataset.campId)] = inp.value;
+            });
+            document.querySelectorAll('.camp-input-radio:checked').forEach(inp => {
+                if (inp.dataset.optId) {
+                    vals[parseInt(inp.dataset.campId)] = inp.dataset.optId;
+                }
+            });
+            document.querySelectorAll('.camp-input-chk').forEach(chk => {
+                const cid = parseInt(chk.dataset.campId);
+                if (!vals[cid]) vals[cid] = [];
+                if (chk.checked) vals[cid].push(chk.dataset.optId);
+            });
+            // Convert arrays to comma-separated strings
+            for (const [k, v] of Object.entries(vals)) {
+                if (Array.isArray(v)) vals[k] = v.join(',');
+            }
+            return vals;
+        }
+
+        function guardarValoresCampos(usuarioId, valores) {
+            for (const [campId, valor] of Object.entries(valores)) {
+                db.run("INSERT OR REPLACE INTO usuario_campo_valor (usuario_id, campo_id, valor) VALUES (?, ?, ?);",
+                    [usuarioId, parseInt(campId), valor]);
+            }
+        }
+
+        // Modal de campos personalizados
+        document.getElementById('gestionCampBtn').addEventListener('click', () => {
+            document.getElementById('modalCampos').style.display = 'flex';
+            document.getElementById('opcionesCampoContainer').style.display = 'none';
+            editingCampoOpciones = null;
+        });
+        document.getElementById('closeCampBtn').addEventListener('click', () => {
+            document.getElementById('modalCampos').style.display = 'none';
+            cargarCamposPersonalizados();
+            actualizarTabla();
+        });
+        document.getElementById('modalCampos').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('modalCampos').style.display = 'none';
+                cargarCamposPersonalizados();
+                actualizarTabla();
+            }
+        });
+        document.getElementById('addCampBtn').addEventListener('click', () => {
+            const nombre = document.getElementById('newCampNombre').value.trim();
+            const descripcion = document.getElementById('newCampDesc').value.trim();
+            const tipo = document.getElementById('newCampTipo').value;
+            if (!nombre) { alert('El nombre es obligatorio.'); return; }
+            try {
+                db.run("INSERT INTO campos_personalizados (nombre, descripcion, tipo) VALUES (?, ?, ?);", [nombre, descripcion || null, tipo]);
+                document.getElementById('newCampNombre').value = '';
+                document.getElementById('newCampDesc').value = '';
+                cargarCamposPersonalizados();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        });
+
         const COLORES_GRADO = {
             S: '#e74c3c', A: '#e67e22', B: '#d4a017', C: '#2ecc71',
             D: '#00bcd4', E: '#9b59b6', F: '#e91e90'
@@ -545,6 +792,17 @@
                     });
                 }
 
+                // Cargar valores de campos personalizados
+                const campValRes = db.exec("SELECT usuario_id, campo_id, valor FROM usuario_campo_valor;");
+                const userCampVals = {};
+                if (campValRes.length > 0) {
+                    campValRes[0].values.forEach(r => {
+                        const uid = r[0];
+                        if (!userCampVals[uid]) userCampVals[uid] = {};
+                        userCampVals[uid][r[1]] = r[2];
+                    });
+                }
+
                 if (sortColumn !== null) {
                     filas.sort((a, b) => {
                         const valA = a[sortColumn];
@@ -567,7 +825,7 @@
                     const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
                 });
-                html += '<th>Caract.</th><th>Etiquetas</th><th>Acciones</th>';
+                html += '<th>Caract.</th><th>Etiquetas</th><th>Camp. Pers.</th><th>Acciones</th>';
                 html += '</tr></thead><tbody>';
 
                 filas.forEach(fila => {
@@ -611,6 +869,29 @@
                         html += '<em style="font-size:0.85em;color:#999">—</em>';
                     }
                     html += '</td>';
+                    // Columna Campos Personalizados
+                    html += '<td class="camp-cell" data-id="' + id + '" style="max-width:250px;font-size:0.85em">';
+                    const cvals = userCampVals[id] || {};
+                    if (listaCampoPersonalizado.length > 0) {
+                        listaCampoPersonalizado.forEach(c => {
+                            const v = cvals[c.id];
+                            if (v !== undefined) {
+                                if (c.tipo === 'texto') {
+                                    html += `<div><strong>${c.nombre}:</strong> ${v}</div>`;
+                                } else {
+                                    const opts = obtenerOpcionesCampo(c.id);
+                                    const selectedIds = v.split(',').filter(Boolean);
+                                    const labels = opts.filter(o => selectedIds.includes(String(o.id))).map(o => o.valor);
+                                    html += `<div><strong>${c.nombre}:</strong> ${labels.join(', ') || '—'}</div>`;
+                                }
+                            } else {
+                                html += `<div style="color:#999"><strong>${c.nombre}:</strong> —</div>`;
+                            }
+                        });
+                    } else {
+                        html += '<em style="color:#999">—</em>';
+                    }
+                    html += '</td>';
                     // Columna Acciones
                     html += '<td style="white-space:nowrap">';
                     html += `<button class="edit-btn" data-id="${id}">✏️ Editar</button> `;
@@ -646,6 +927,7 @@
                         const td = container.querySelector(`td.editable[data-id="${id}"]`);
                         const carCell = container.querySelector(`td.car-cell[data-id="${id}"]`);
                         const etqCell = container.querySelector(`td.tag-cell[data-id="${id}"]`);
+                        const campCell = container.querySelector(`td.camp-cell[data-id="${id}"]`);
                         const valorActual = td.textContent;
 
                         if (btn.textContent.includes('Editar')) {
@@ -695,6 +977,47 @@
                                 chkHtml += '</div>';
                                 etqCell.innerHTML = chkHtml;
                             }
+
+                            // Reemplazar campo personalizado con editores
+                            if (campCell && listaCampoPersonalizado.length > 0) {
+                                const cv = db.exec("SELECT campo_id, valor FROM usuario_campo_valor WHERE usuario_id = ?;", [parseInt(id)]);
+                                const saved = {};
+                                if (cv.length > 0) {
+                                    cv[0].values.forEach(r => { saved[r[0]] = r[1]; });
+                                }
+                                let campEditHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+                                listaCampoPersonalizado.forEach(c => {
+                                    if (c.tipo === 'texto') {
+                                        const val = saved[c.id] || '';
+                                        campEditHtml += `<label style="display:flex;flex-direction:column;gap:1px;font-size:0.85em">
+                                            ${c.nombre} <input type="text" class="camp-edit-text" data-camp-id="${c.id}" value="${val}" style="padding:1px 4px">
+                                        </label>`;
+                                    } else {
+                                        const opts = obtenerOpcionesCampo(c.id);
+                                        const isMulti = c.tipo === 'lista_multiple';
+                                        const savedIds = saved[c.id] ? saved[c.id].split(',').filter(Boolean) : [];
+                                        campEditHtml += `<fieldset style="border:1px solid #ddd;border-radius:3px;padding:2px 4px;margin:2px">
+                                            <legend style="font-size:0.8em">${c.nombre}</legend>`;
+                                        opts.forEach(o => {
+                                            const oid = String(o.id);
+                                            if (isMulti) {
+                                                const checked = savedIds.includes(oid) ? 'checked' : '';
+                                                campEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                                    <input type="checkbox" class="camp-edit-chk" data-camp-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.valor}
+                                                </label>`;
+                                            } else {
+                                                const checked = savedIds.includes(oid) ? 'checked' : '';
+                                                campEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                                    <input type="radio" class="camp-edit-radio" name="camp_edit_radio_${c.id}_${id}" data-camp-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.valor}
+                                                </label>`;
+                                            }
+                                        });
+                                        campEditHtml += '</fieldset>';
+                                    }
+                                });
+                                campEditHtml += '</div>';
+                                campCell.innerHTML = campEditHtml;
+                            }
                         } else {
                             const input = td.querySelector('.edit-input');
                             const nuevoNombre = input.value.trim();
@@ -720,6 +1043,27 @@
                             selectedIds.forEach(eid => {
                                 db.run("INSERT INTO usuario_etiquetas (usuario_id, etiqueta_id) VALUES (?, ?);", [parseInt(id), eid]);
                             });
+
+                            // Guardar campos personalizados editados
+                            if (campCell) {
+                                const campVals = {};
+                                campCell.querySelectorAll('.camp-edit-text').forEach(inp => {
+                                    campVals[parseInt(inp.dataset.campId)] = inp.value;
+                                });
+                                campCell.querySelectorAll('.camp-edit-radio:checked').forEach(inp => {
+                                    if (inp.dataset.optId) campVals[parseInt(inp.dataset.campId)] = inp.dataset.optId;
+                                });
+                                campCell.querySelectorAll('.camp-edit-chk').forEach(chk => {
+                                    const cid = parseInt(chk.dataset.campId);
+                                    if (!campVals[cid]) campVals[cid] = [];
+                                    if (chk.checked) campVals[cid].push(chk.dataset.optId);
+                                });
+                                for (const [k, v] of Object.entries(campVals)) {
+                                    const val = Array.isArray(v) ? v.join(',') : v;
+                                    db.run("INSERT OR REPLACE INTO usuario_campo_valor (usuario_id, campo_id, valor) VALUES (?, ?, ?);",
+                                        [parseInt(id), parseInt(k), val]);
+                                }
+                            }
 
                             actualizarTabla();
                         }
@@ -792,12 +1136,17 @@
             const etqIds = obtenerIdsEtiquetasSeleccionadas();
             guardarEtiquetasUsuario(usuarioId, etqIds);
 
+            // Guardar campos personalizados
+            const campVals = obtenerValoresCamposPersonalizados();
+            guardarValoresCampos(usuarioId, campVals);
+
             nombreInput.value = '';
             actualizarTabla();
         });
 
         // Botón: Limpiar tabla
         document.getElementById('clearBtn').addEventListener('click', () => {
+            db.run("DELETE FROM usuario_campo_valor;");
             db.run("DELETE FROM usuario_etiquetas;");
             db.run("DELETE FROM usuario_caracteristicas;");
             db.run("DELETE FROM usuarios;");
