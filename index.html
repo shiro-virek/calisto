@@ -65,6 +65,7 @@
         .tag-check { margin-right:8px; display:inline-flex; align-items:center; gap:3px; }
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
         .modal-content { background:white; padding:20px; border-radius:8px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; }
+        .drop-hover { border-color:#2ecc71 !important; background:#e8f8f0 !important; }
         pre {
             background: #272822;
             color: #f8f8f2;
@@ -110,6 +111,13 @@
         <h3>5. Campos Personalizados</h3>
         <p>Define campos dinámicos para los usuarios (texto libre, lista única o lista múltiple).</p>
         <button id="gestionCampBtn">🔧 Gestionar Campos</button>
+    </div>
+
+    <div class="card" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer">
+        <h3>6. Importación por Arrastrar y Soltar</h3>
+        <p>Arrastra una o varias imágenes aquí para crear automáticamente un usuario por cada una.</p>
+        <p style="font-size:0.9em;color:#666">El nombre del usuario se tomará del nombre del archivo (sin extensión).</p>
+        <div id="dropStatus" style="margin-top:8px;color:#999;font-size:0.9em">Suelta las imágenes aquí</div>
     </div>
 
     <div id="modalCampos" class="modal-overlay">
@@ -177,7 +185,7 @@
     </div>
 
     <div class="card">
-        <h3>6. Operaciones de Base de Datos</h3>
+        <h3>7. Operaciones de Base de Datos</h3>
         <label for="nombreInput">Nombre:</label>
         <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
         <div id="carInputsContainer" style="margin-top:8px"></div>
@@ -188,7 +196,7 @@
     </div>
 
     <div class="card">
-        <h3>7. Contenido Actual de la Tabla `usuarios`</h3>
+        <h3>8. Contenido Actual de la Tabla `usuarios`</h3>
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
     </div>
 
@@ -745,6 +753,87 @@
             } catch (e) {
                 alert('Error: ' + e.message);
             }
+        });
+
+        // Drag & Drop de imágenes para crear usuarios
+        const dropZone = document.getElementById('dropZoneCard');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drop-hover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drop-hover');
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drop-hover');
+
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length === 0) {
+                document.getElementById('dropStatus').textContent = 'Solo se aceptan imágenes.';
+                document.getElementById('dropStatus').style.color = '#e74c3c';
+                return;
+            }
+
+            if (!imagesDirHandle) {
+                document.getElementById('dropStatus').textContent = '❌ Primero selecciona una carpeta de imágenes (sección 2).';
+                document.getElementById('dropStatus').style.color = '#e74c3c';
+                return;
+            }
+
+            document.getElementById('dropStatus').textContent = `Procesando ${files.length} imagen(es)...`;
+            document.getElementById('dropStatus').style.color = '#2ecc71';
+
+            let creados = 0;
+            let errores = 0;
+
+            for (const file of files) {
+                try {
+                    const nombre = file.name.replace(/\.[^/.]+$/, '').trim();
+                    if (!nombre) { errores++; continue; }
+
+                    db.run("INSERT INTO usuarios (nombre) VALUES (?);", [nombre]);
+                    const newId = db.exec("SELECT last_insert_rowid();");
+                    const usuarioId = newId[0].values[0][0];
+
+                    // Guardar características con valores por defecto
+                    const vals = obtenerValoresCaracteristicas();
+                    guardarCaracteristicasUsuario(usuarioId, vals);
+
+                    // Guardar etiquetas seleccionadas
+                    const etqIds = obtenerIdsEtiquetasSeleccionadas();
+                    guardarEtiquetasUsuario(usuarioId, etqIds);
+
+                    // Guardar campos personalizados
+                    const campVals = obtenerValoresCamposPersonalizados();
+                    guardarValoresCampos(usuarioId, campVals);
+
+                    // Subir imagen
+                    const ext = file.name.split('.').pop() || 'png';
+                    const randomId = Math.random().toString(36).substring(2, 10);
+                    const nombreArchivo = `${nombre}_${randomId}.${ext}`;
+                    const blob = new Blob([await file.arrayBuffer()], { type: file.type });
+                    await guardarImagenFS(blob, nombreArchivo);
+                    db.run("UPDATE usuarios SET imagen = ? WHERE id = ?;", [nombreArchivo, usuarioId]);
+
+                    creados++;
+                } catch (err) {
+                    errores++;
+                    console.error('Error al procesar', file.name, err);
+                }
+            }
+
+            actualizarTabla();
+            const msg = `✅ ${creados} usuario(s) creado(s)` + (errores > 0 ? `, ${errores} error(es)` : '');
+            document.getElementById('dropStatus').textContent = msg;
+            document.getElementById('dropStatus').style.color = errores > 0 ? '#e67e22' : '#2ecc71';
+            setTimeout(() => {
+                document.getElementById('dropStatus').textContent = 'Suelta las imágenes aquí';
+                document.getElementById('dropStatus').style.color = '#999';
+            }, 4000);
         });
 
         const COLORES_GRADO = {
