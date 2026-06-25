@@ -1067,7 +1067,7 @@
                     const id = fila[0];
                     const nombreArchivo = fila[colImagen] || null;
                     const cars = userCars[id] || [];
-                    html += '<tr>';
+                    html += `<tr data-id="${id}" style="cursor:default">`;
                     fila.forEach((celda, i) => {
                         const colName = columnas[i];
                         if (colName === 'imagen') {
@@ -1325,6 +1325,47 @@
                             document.getElementById('imageModal').style.display = 'flex';
                         } catch (err) {
                             alert('Error al cargar la imagen: ' + err.message);
+                        }
+                    });
+                });
+
+                // Drag & drop de imagen sobre cada fila
+                container.querySelectorAll('tr[data-id]').forEach(tr => {
+                    tr.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        tr.style.outline = '2px dashed #3498db';
+                    });
+                    tr.addEventListener('dragleave', () => {
+                        tr.style.outline = '';
+                    });
+                    tr.addEventListener('drop', async (e) => {
+                        e.preventDefault();
+                        tr.style.outline = '';
+                        const file = e.dataTransfer.files[0];
+                        if (!file || !file.type.startsWith('image/')) return;
+                        if (!imagesDirHandle) {
+                            alert('Primero selecciona una carpeta de imágenes (sección 2).');
+                            return;
+                        }
+                        const uid = parseInt(tr.dataset.id);
+                        try {
+                            const stmt = db.prepare("SELECT nombre, imagen FROM usuarios WHERE id = ?");
+                            stmt.bind([uid]);
+                            if (!stmt.step()) { stmt.free(); return; }
+                            const row = stmt.getAsObject();
+                            stmt.free();
+                            if (row.imagen) {
+                                try { await eliminarImagenFS(row.imagen); } catch (_) {}
+                            }
+                            const ext = file.name.split('.').pop() || 'png';
+                            const randomId = Math.random().toString(36).substring(2, 10);
+                            const nombreArchivo = `${row.nombre}_${randomId}.${ext}`;
+                            const blob = new Blob([await file.arrayBuffer()], { type: file.type });
+                            await guardarImagenFS(blob, nombreArchivo);
+                            db.run("UPDATE usuarios SET imagen = ? WHERE id = ?;", [nombreArchivo, uid]);
+                            actualizarTabla();
+                        } catch (err) {
+                            alert('Error: ' + err.message);
                         }
                     });
                 });
