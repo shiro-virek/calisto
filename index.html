@@ -1256,10 +1256,19 @@
 
         document.getElementById('downloadBtn').addEventListener('click', descargarBaseDatos);
 
+        let pendingSave = false;
         window.addEventListener('beforeunload', (e) => {
-            if (confirm('¿Deseas descargar una copia de la base de datos antes de salir?')) {
-                descargarBaseDatos();
-            }
+            e.preventDefault();
+            e.returnValue = '';
+            pendingSave = true;
+            setTimeout(() => {
+                if (pendingSave) {
+                    pendingSave = false;
+                    if (confirm('¿Deseas descargar una copia de la base de datos antes de salir?')) {
+                        descargarBaseDatos();
+                    }
+                }
+            }, 100);
         });
 
         // INPUT IMPORTAR: Leer un archivo .sqlite arrastrado o seleccionado por el usuario
