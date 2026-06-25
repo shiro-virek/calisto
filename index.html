@@ -103,6 +103,9 @@
             actualizarTabla();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
 
+        let sortColumn = null;
+        let sortAsc = true;
+
         // Función para renderizar el contenido de la base de datos en el HTML
         function actualizarTabla() {
             if (!db) return;
@@ -118,11 +121,25 @@
                 }
 
                 const columnas = res[0].columns;
-                const filas = res[0].values;
+                let filas = res[0].values;
+
+                // Ordenar si hay una columna seleccionada
+                if (sortColumn !== null) {
+                    filas.sort((a, b) => {
+                        const valA = a[sortColumn];
+                        const valB = b[sortColumn];
+                        if (valA < valB) return sortAsc ? -1 : 1;
+                        if (valA > valB) return sortAsc ? 1 : -1;
+                        return 0;
+                    });
+                }
 
                 // Construir la tabla HTML dinámicamente
                 let html = '<table><thead><tr>';
-                columnas.forEach(col => html += `<th>${col}</th>`);
+                columnas.forEach((col, i) => {
+                    const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
+                    html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
+                });
                 html += '</tr></thead><tbody>';
 
                 filas.forEach(fila => {
@@ -133,6 +150,20 @@
                 html += '</tbody></table>';
 
                 container.innerHTML = html;
+
+                // Asignar eventos de click a los encabezados
+                container.querySelectorAll('th[data-col]').forEach(th => {
+                    th.addEventListener('click', () => {
+                        const col = parseInt(th.dataset.col);
+                        if (sortColumn === col) {
+                            sortAsc = !sortAsc;
+                        } else {
+                            sortColumn = col;
+                            sortAsc = true;
+                        }
+                        actualizarTabla();
+                    });
+                });
             } catch (e) {
                 document.getElementById('tableContainer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
             }
