@@ -1243,20 +1243,23 @@
         });
 
         // BOTÓN EXPORTAR: Descargar base de datos como archivo .sqlite
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            // db.export() devuelve un Uint8Array (un arreglo de bytes del archivo SQLite binario)
+        function descargarBaseDatos() {
             const binaryArray = db.export();
-
-            // Creamos un Blob a partir de los bytes binarios
             const blob = new Blob([binaryArray], { type: "application/x-sqlite3" });
-
-            // Truco estándar en JS para forzar la descarga de un archivo
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
             a.download = "mi_base_de_datos.sqlite";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', descargarBaseDatos);
+
+        window.addEventListener('beforeunload', (e) => {
+            if (confirm('¿Deseas descargar una copia de la base de datos antes de salir?')) {
+                descargarBaseDatos();
+            }
         });
 
         // INPUT IMPORTAR: Leer un archivo .sqlite arrastrado o seleccionado por el usuario
