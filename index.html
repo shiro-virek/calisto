@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLite Portátil con sql.js</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        h1 { color: #2c3e50; }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button, input[type="file"]::-webkit-file-upload-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        button:hover { background-color: #2980b9; }
+        button.success { background-color: #2ecc71; }
+        button.success:hover { background-color: #27ae60; }
+        input[type="file"] { margin: 10px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th { background-color: #f2f2f2; }
+        pre {
+            background: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+</head>
+<body>
+
+    <h1>SQLite en el Navegador (`sql.js`)</h1>
+
+    <div class="card">
+        <h3>1. Gestión del Archivo de Base de Datos</h3>
+        <p>Puedes subir un archivo .sqlite existente o descargar el estado actual.</p>
+        <input type="file" id="uploadInput" accept=".sqlite,.db"><br><br>
+        <button id="downloadBtn" class="success">⬇️ Descargar Archivo .sqlite</button>
+    </div>
+
+    <div class="card">
+        <h3>2. Operaciones de Base de Datos</h3>
+        <button id="insertBtn">➕ Insertar Registro Aleatorio</button>
+        <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
+    </div>
+
+    <div class="card">
+        <h3>3. Contenido Actual de la Tabla `usuarios`</h3>
+        <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
+    </div>
+
+    <script>
+        let db = null;
+        let SQL = null;
+
+        // Configuración inicial de sql.js
+        const config = {
+            // Indicamos de dónde obtener el binario compilado WebAssembly (.wasm)
+            locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
+        };
+
+        // Inicializar el motor SQL al cargar la página
+        initSqlJs(config).then(function(sqlModule){
+            SQL = sqlModule;
+            // Crear una base de datos vacía en memoria por defecto
+            db = new SQL.Database();
+
+            // Crear una tabla de prueba inicial
+            db.run("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+            db.run("INSERT INTO usuarios (nombre) VALUES ('Usuario Inicial');");
+
+            actualizarTabla();
+        }).catch(err => console.error("Error al inicializar sql.js:", err));
+
+        // Función para renderizar el contenido de la base de datos en el HTML
+        function actualizarTabla() {
+            if (!db) return;
+
+            try {
+                // Ejecutar la consulta SELECT
+                const res = db.exec("SELECT * FROM usuarios;");
+                const container = document.getElementById('tableContainer');
+
+                if (res.length === 0 || res[0].values.length === 0) {
+                    container.innerHTML = "<em>La tabla 'usuarios' está vacía.</em>";
+                    return;
+                }
+
+                const columnas = res[0].columns;
+                const filas = res[0].values;
+
+                // Construir la tabla HTML dinámicamente
+                let html = '<table><thead><tr>';
+                columnas.forEach(col => html += `<th>${col}</th>`);
+                html += '</tr></thead><tbody>';
+
+                filas.forEach(fila => {
+                    html += '<tr>';
+                    fila.forEach(celda => html += `<td>${celda}</td>`);
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('tableContainer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+            }
+        }
+
+        // Botón: Insertar registro aleatorio
+        document.getElementById('insertBtn').addEventListener('click', () => {
+            const nombres = ['Ana', 'Carlos', 'Sofía', 'Mateo', 'Lucía', 'Diego', 'Elena'];
+            const nombreAleatorio = nombres[Math.floor(Math.random() * nombres.length)];
+
+            db.run("INSERT INTO usuarios (nombre) VALUES (?);", [nombreAleatorio]);
+            actualizarTabla();
+        });
+
+        // Botón: Limpiar tabla
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            db.run("DELETE FROM usuarios;");
+            actualizarTabla();
+        });
+
+        // BOTÓN EXPORTAR: Descargar base de datos como archivo .sqlite
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            // db.export() devuelve un Uint8Array (un arreglo de bytes del archivo SQLite binario)
+            const binaryArray = db.export();
+
+            // Creamos un Blob a partir de los bytes binarios
+            const blob = new Blob([binaryArray], { type: "application/x-sqlite3" });
+
+            // Truco estándar en JS para forzar la descarga de un archivo
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "mi_base_de_datos.sqlite";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        // INPUT IMPORTAR: Leer un archivo .sqlite arrastrado o seleccionado por el usuario
+        document.getElementById('uploadInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function() {
+                const Uints = new Uint8Array(reader.result);
+
+                // Cerramos la DB vieja si existía para liberar memoria
+                if (db) db.close();
+
+                // Inicializamos una nueva base de datos pasando el arreglo de bytes del archivo cargado
+                db = new SQL.Database(Uints);
+
+                alert("¡Archivo .sqlite cargado con éxito!");
+                actualizarTabla();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
