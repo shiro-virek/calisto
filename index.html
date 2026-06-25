@@ -66,6 +66,10 @@
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
         .modal-content { background:white; padding:20px; border-radius:8px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; }
         .drop-hover { border-color:#2ecc71 !important; background:#e8f8f0 !important; }
+        .filter-group { border:1px solid #ddd; border-radius:6px; padding:8px 10px; background:#fafafa; flex:1; min-width:180px }
+        .filter-group h4 { margin:0 0 6px 0; font-size:0.9em; color:#555 }
+        .filter-group label { font-size:0.85em; white-space:nowrap }
+        .filter-group select, .filter-group input { padding:2px 4px; font-size:0.85em }
         pre {
             background: #272822;
             color: #f8f8f2;
@@ -195,8 +199,13 @@
         <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
     </div>
 
+    <div class="card" id="filterCard">
+        <h3>8. Filtros</h3>
+        <div id="filterContainer" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start"></div>
+    </div>
+
     <div class="card">
-        <h3>8. Contenido Actual de la Tabla `usuarios`</h3>
+        <h3>9. Contenido Actual de la Tabla `usuarios`</h3>
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
     </div>
 
@@ -247,6 +256,7 @@
                 cargarCaracteristicas();
                 cargarEtiquetas();
                 cargarCamposPersonalizados();
+                renderizarFiltros();
                 actualizarTabla();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
 
@@ -360,6 +370,7 @@
             }
             renderizarCaracteristicas();
             renderizarInputsCaracteristicas();
+            if (document.getElementById('filterContainer')) renderizarFiltros();
         }
 
         function renderizarCaracteristicas() {
@@ -486,6 +497,7 @@
             }
             renderizarEtiquetas();
             renderizarCheckboxesEtiquetas();
+            if (document.getElementById('filterContainer')) renderizarFiltros();
         }
 
         function renderizarEtiquetas() {
@@ -619,6 +631,7 @@
             }
             renderizarCamposPersonalizados();
             renderizarInputsCampos();
+            if (document.getElementById('filterContainer')) renderizarFiltros();
         }
 
         function obtenerOpcionesCampo(campoId) {
@@ -941,6 +954,172 @@
             D: '#00bcd4', E: '#9b59b6', F: '#e91e90'
         };
 
+        // ─── Filtros ──────────────────────────────────────────────
+        function renderizarFiltros() {
+            const container = document.getElementById('filterContainer');
+            let html = '';
+
+            // Filtro nombre
+            const fn = document.getElementById('filterNombre') ? document.getElementById('filterNombre').value : '';
+            html += `<div class="filter-group"><h4>Nombre</h4>
+                <input type="text" id="filterNombre" placeholder="Buscar nombre..." value="${fn}" style="width:90%"></div>`;
+
+            // Filtros características
+            if (listaCaracteristicas.length > 0) {
+                html += '<div class="filter-group"><h4>Características</h4>';
+                listaCaracteristicas.forEach(c => {
+                    const selId = `filter_car_${c.id}`;
+                    const cur = document.getElementById(selId) ? document.getElementById(selId).value : '';
+                    html += `<label>${c.nombre}:
+                        <select id="${selId}" style="margin:2px 0">
+                            <option value="">—</option>
+                            <option value="S" ${cur === 'S' ? 'selected' : ''}>S</option>
+                            <option value="A" ${cur === 'A' ? 'selected' : ''}>A</option>
+                            <option value="B" ${cur === 'B' ? 'selected' : ''}>B</option>
+                            <option value="C" ${cur === 'C' ? 'selected' : ''}>C</option>
+                            <option value="D" ${cur === 'D' ? 'selected' : ''}>D</option>
+                            <option value="E" ${cur === 'E' ? 'selected' : ''}>E</option>
+                            <option value="F" ${cur === 'F' ? 'selected' : ''}>F</option>
+                        </select>
+                    </label><br>`;
+                });
+                html += '</div>';
+            }
+
+            // Filtros etiquetas
+            if (listaEtiquetas.length > 0) {
+                html += '<div class="filter-group"><h4>Etiquetas</h4>';
+                listaEtiquetas.forEach(e => {
+                    const chkId = `filter_etq_${e.id}`;
+                    const checked = document.getElementById(chkId) ? document.getElementById(chkId).checked : false;
+                    html += `<label><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.nombre}</label><br>`;
+                });
+                html += '</div>';
+            }
+
+            // Filtros campos personalizados
+            if (listaCampoPersonalizado.length > 0) {
+                listaCampoPersonalizado.forEach(c => {
+                    html += `<div class="filter-group"><h4>${c.nombre}</h4>`;
+                    const inpId = `filter_camp_${c.id}`;
+                    if (c.tipo === 'texto') {
+                        const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
+                        html += `<input type="text" id="${inpId}" placeholder="Filtrar..." value="${cur}" style="width:90%">`;
+                    } else {
+                        const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
+                        const opts = obtenerOpcionesCampo(c.id);
+                        html += `<select id="${inpId}" style="width:90%"><option value="">—</option>`;
+                        opts.forEach(o => {
+                            html += `<option value="${o.id}" ${cur === String(o.id) ? 'selected' : ''}>${o.valor}</option>`;
+                        });
+                        html += `</select>`;
+                    }
+                    html += '</div>';
+                });
+            }
+
+            container.innerHTML = html;
+
+            // Asignar eventos change/input para refrescar
+            container.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('change', () => actualizarTabla());
+                if (el.tagName === 'INPUT' && el.type === 'text') {
+                    el.addEventListener('input', () => actualizarTabla());
+                }
+            });
+        }
+
+        function obtenerFiltrosActivos() {
+            const f = { nombre: '', car: {}, etq: [], camp: {} };
+
+            const fn = document.getElementById('filterNombre');
+            if (fn) f.nombre = fn.value.toLowerCase().trim();
+
+            listaCaracteristicas.forEach(c => {
+                const el = document.getElementById(`filter_car_${c.id}`);
+                if (el && el.value) f.car[c.id] = el.value;
+            });
+
+            listaEtiquetas.forEach(e => {
+                const el = document.getElementById(`filter_etq_${e.id}`);
+                if (el && el.checked) f.etq.push(e.id);
+            });
+
+            listaCampoPersonalizado.forEach(c => {
+                const el = document.getElementById(`filter_camp_${c.id}`);
+                if (el && el.value) f.camp[c.id] = el.value;
+            });
+
+            return f;
+        }
+
+        function filtrarUsuarios(filas, filtros) {
+            // Primero construir un map con datos relacionales
+            const carMap = {};
+            const carRes = db.exec(`SELECT usuario_id, caracteristica_id, valor FROM usuario_caracteristicas;`);
+            if (carRes.length > 0) {
+                carRes[0].values.forEach(r => {
+                    if (!carMap[r[0]]) carMap[r[0]] = {};
+                    carMap[r[0]][r[1]] = r[2];
+                });
+            }
+
+            const etqMap = {};
+            const etqRes = db.exec(`SELECT usuario_id, etiqueta_id FROM usuario_etiquetas;`);
+            if (etqRes.length > 0) {
+                etqRes[0].values.forEach(r => {
+                    if (!etqMap[r[0]]) etqMap[r[0]] = [];
+                    etqMap[r[0]].push(r[1]);
+                });
+            }
+
+            const campMap = {};
+            const campRes = db.exec("SELECT usuario_id, campo_id, valor FROM usuario_campo_valor;");
+            if (campRes.length > 0) {
+                campRes[0].values.forEach(r => {
+                    if (!campMap[r[0]]) campMap[r[0]] = {};
+                    campMap[r[0]][r[1]] = r[2];
+                });
+            }
+
+            return filas.filter(fila => {
+                const uid = fila[0];
+
+                // Nombre
+                if (filtros.nombre && !String(fila[1]).toLowerCase().includes(filtros.nombre)) return false;
+
+                // Características
+                for (const [carId, valEsperado] of Object.entries(filtros.car)) {
+                    const valUsuario = carMap[uid] ? carMap[uid][carId] : null;
+                    if (valUsuario !== valEsperado) return false;
+                }
+
+                // Etiquetas
+                for (const etqId of filtros.etq) {
+                    const tiene = etqMap[uid] && etqMap[uid].includes(etqId);
+                    if (!tiene) return false;
+                }
+
+                // Campos personalizados
+                for (const [campId, valEsperado] of Object.entries(filtros.camp)) {
+                    const valUsuario = campMap[uid] ? campMap[uid][campId] : null;
+                    if (valUsuario === undefined) return false;
+                    // Para texto: contains; para lista: exact match
+                    const campo = listaCampoPersonalizado.find(c => c.id === parseInt(campId));
+                    if (campo && campo.tipo === 'texto') {
+                        if (!String(valUsuario).toLowerCase().includes(String(valEsperado).toLowerCase())) return false;
+                    } else {
+                        const ids = String(valUsuario).split(',').filter(Boolean);
+                        if (!ids.includes(String(valEsperado))) return false;
+                    }
+                }
+
+                return true;
+            });
+        }
+
+        // ─── Fin Filtros ──────────────────────────────────────────
+
         // Función para renderizar el contenido de la base de datos en el HTML
         function actualizarTabla() {
             if (!db) return;
@@ -990,6 +1169,14 @@
                         if (!userCampVals[uid]) userCampVals[uid] = {};
                         userCampVals[uid][r[1]] = r[2];
                     });
+                }
+
+                // Aplicar filtros
+                const filtros = obtenerFiltrosActivos();
+                filas = filtrarUsuarios(filas, filtros);
+                if (filas.length === 0) {
+                    container.innerHTML = '<em style="color:#999">No hay usuarios que coincidan con los filtros.</em>';
+                    return;
                 }
 
                 // Puntaje: cargar opciones de campos personalizados para el cálculo
