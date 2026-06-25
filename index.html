@@ -60,6 +60,9 @@
         .car-item { margin-right: 8px; display: inline-block; }
         .car-cell { max-width: 200px; }
         .car-select { margin: 0 6px 0 2px; padding: 2px 4px; }
+        .tag-badge { display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; border-radius:10px; background:#34495e; color:white; font-size:0.8em; font-weight:bold; }
+        .tag-cell { max-width: 220px; }
+        .tag-check { margin-right:8px; display:inline-flex; align-items:center; gap:3px; }
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
         .modal-content { background:white; padding:20px; border-radius:8px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; }
         pre {
@@ -93,8 +96,31 @@
 
     <div class="card">
         <h3>3. Gestión de Características</h3>
-        <p>Administra las características que se pueden asignar a los usuarios.</p>
+        <p>Administra las características que se pueden asignar a los usuarios (valor único: F/E/D/C/B/A/S).</p>
         <button id="gestionCarBtn">⚙️ Gestionar Características</button>
+    </div>
+
+    <div class="card">
+        <h3>4. Gestión de Etiquetas</h3>
+        <p>Administra las etiquetas (tags) que se pueden asignar a los usuarios (multiselección).</p>
+        <button id="gestionEtqBtn">🏷️ Gestionar Etiquetas</button>
+    </div>
+
+    <div id="modalEtiquetas" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Gestión de Etiquetas</h3>
+            <table id="etqTable" style="margin-bottom:10px">
+                <thead><tr><th>Nombre</th><th>Factor</th><th>Descripción</th><th></th></tr></thead>
+                <tbody id="etqTableBody"></tbody>
+            </table>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <input type="text" id="newEtqNombre" placeholder="Nombre (ej: OLD, SHORT)" style="flex:1" pattern="[A-Z0-9_]+" title="Solo mayúsculas, números y guión bajo">
+                <input type="number" id="newEtqFactor" placeholder="Factor" step="0.01" style="flex:0 0 80px">
+                <input type="text" id="newEtqDesc" placeholder="Descripción" style="flex:2">
+                <button id="addEtqBtn">➕ Añadir</button>
+                <button id="closeEtqBtn" style="background-color:#e74c3c;">✖ Cerrar</button>
+            </div>
+        </div>
     </div>
 
     <div id="modalCaracteristicas" class="modal-overlay">
@@ -114,16 +140,17 @@
     </div>
 
     <div class="card">
-        <h3>4. Operaciones de Base de Datos</h3>
+        <h3>5. Operaciones de Base de Datos</h3>
         <label for="nombreInput">Nombre:</label>
         <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
         <div id="carInputsContainer" style="margin-top:8px"></div>
+        <div id="etqInputsContainer" style="margin-top:8px"></div>
         <button id="insertBtn" style="margin-top:8px">➕ Insertar</button>
         <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
     </div>
 
     <div class="card">
-        <h3>5. Contenido Actual de la Tabla `usuarios`</h3>
+        <h3>6. Contenido Actual de la Tabla `usuarios`</h3>
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
     </div>
 
@@ -156,6 +183,8 @@
             db.run("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, imagen TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
             db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
             db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
+                db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
+                db.run("CREATE TABLE IF NOT EXISTS usuario_etiquetas (usuario_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (usuario_id, etiqueta_id));");
 
             // Insertar característica por defecto
             const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
@@ -164,6 +193,7 @@
             }
 
             cargarCaracteristicas();
+            cargarEtiquetas();
             actualizarTabla();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
 
@@ -294,8 +324,9 @@
                     const id = parseInt(btn.dataset.id);
                     db.run("DELETE FROM usuario_caracteristicas WHERE caracteristica_id = ?;", [id]);
                     db.run("DELETE FROM caracteristicas WHERE id = ?;", [id]);
-                    cargarCaracteristicas();
-                    actualizarTabla();
+                cargarCaracteristicas();
+                cargarEtiquetas();
+                actualizarTabla();
                 });
             });
         }
@@ -367,6 +398,108 @@
             }
         }
 
+        // CRUD Etiquetas
+        let listaEtiquetas = [];
+
+        function cargarEtiquetas() {
+            const res = db.exec("SELECT id, nombre, factor, descripcion FROM etiquetas ORDER BY id;");
+            listaEtiquetas = [];
+            if (res.length > 0) {
+                listaEtiquetas = res[0].values.map(f => ({ id: f[0], nombre: f[1], factor: f[2], descripcion: f[3] }));
+            }
+            renderizarEtiquetas();
+            renderizarCheckboxesEtiquetas();
+        }
+
+        function renderizarEtiquetas() {
+            const tbody = document.getElementById('etqTableBody');
+            tbody.innerHTML = '';
+            listaEtiquetas.forEach(e => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${e.nombre}</td><td>${e.factor !== null ? e.factor : '-'}</td>
+                    <td>${e.descripcion || ''}</td>
+                    <td><button class="del-etq-btn" data-id="${e.id}" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tbody.appendChild(tr);
+            });
+            document.querySelectorAll('.del-etq-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!confirm('¿Eliminar esta etiqueta?')) return;
+                    const id = parseInt(btn.dataset.id);
+                    db.run("DELETE FROM usuario_etiquetas WHERE etiqueta_id = ?;", [id]);
+                    db.run("DELETE FROM etiquetas WHERE id = ?;", [id]);
+                    cargarEtiquetas();
+                    actualizarTabla();
+                });
+            });
+        }
+
+        function renderizarCheckboxesEtiquetas(selectedIds = []) {
+            const container = document.getElementById('etqInputsContainer');
+            container.innerHTML = '';
+            if (listaEtiquetas.length === 0) {
+                container.innerHTML = '<em>No hay etiquetas definidas.</em>';
+                return;
+            }
+            let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
+            listaEtiquetas.forEach(e => {
+                const checked = selectedIds.includes(e.id) ? 'checked' : '';
+                html += `<label class="tag-check">
+                    <input type="checkbox" class="etq-checkbox" data-etq-id="${e.id}" ${checked}>
+                    ${e.nombre}
+                </label>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Modal de etiquetas
+        document.getElementById('gestionEtqBtn').addEventListener('click', () => {
+            document.getElementById('modalEtiquetas').style.display = 'flex';
+        });
+        document.getElementById('closeEtqBtn').addEventListener('click', () => {
+            document.getElementById('modalEtiquetas').style.display = 'none';
+            cargarEtiquetas();
+            actualizarTabla();
+        });
+        document.getElementById('modalEtiquetas').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('modalEtiquetas').style.display = 'none';
+                cargarEtiquetas();
+                actualizarTabla();
+            }
+        });
+        document.getElementById('addEtqBtn').addEventListener('click', () => {
+            const nombre = document.getElementById('newEtqNombre').value.trim().toUpperCase();
+            const factor = document.getElementById('newEtqFactor').value.trim();
+            const descripcion = document.getElementById('newEtqDesc').value.trim();
+            if (!nombre) { alert('El nombre es obligatorio.'); return; }
+            if (!/^[A-Z0-9_]+$/.test(nombre)) {
+                alert('Solo se permiten mayúsculas, números y guión bajo.');
+                return;
+            }
+            try {
+                db.run("INSERT INTO etiquetas (nombre, factor, descripcion) VALUES (?, ?, ?);", [nombre, factor ? parseFloat(factor) : null, descripcion || null]);
+                document.getElementById('newEtqNombre').value = '';
+                document.getElementById('newEtqFactor').value = '';
+                document.getElementById('newEtqDesc').value = '';
+                cargarEtiquetas();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        });
+
+        function obtenerIdsEtiquetasSeleccionadas() {
+            const checks = document.querySelectorAll('#etqInputsContainer .etq-checkbox:checked');
+            return Array.from(checks).map(c => parseInt(c.dataset.etqId));
+        }
+
+        function guardarEtiquetasUsuario(usuarioId, etiquetaIds) {
+            db.run("DELETE FROM usuario_etiquetas WHERE usuario_id = ?;", [usuarioId]);
+            etiquetaIds.forEach(eid => {
+                db.run("INSERT INTO usuario_etiquetas (usuario_id, etiqueta_id) VALUES (?, ?);", [usuarioId, eid]);
+            });
+        }
+
         const COLORES_GRADO = {
             S: '#e74c3c', A: '#e67e22', B: '#d4a017', C: '#2ecc71',
             D: '#00bcd4', E: '#9b59b6', F: '#e91e90'
@@ -400,6 +533,18 @@
                     });
                 }
 
+                // Cargar etiquetas de usuarios
+                const etqRes = db.exec(`SELECT ue.usuario_id, e.nombre
+                    FROM usuario_etiquetas ue JOIN etiquetas e ON ue.etiqueta_id = e.id;`);
+                const userEtqs = {};
+                if (etqRes.length > 0) {
+                    etqRes[0].values.forEach(r => {
+                        const uid = r[0];
+                        if (!userEtqs[uid]) userEtqs[uid] = [];
+                        userEtqs[uid].push(r[1]);
+                    });
+                }
+
                 if (sortColumn !== null) {
                     filas.sort((a, b) => {
                         const valA = a[sortColumn];
@@ -422,7 +567,7 @@
                     const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
                 });
-                html += '<th>Caract.</th><th>Acciones</th>';
+                html += '<th>Caract.</th><th>Etiquetas</th><th>Acciones</th>';
                 html += '</tr></thead><tbody>';
 
                 filas.forEach(fila => {
@@ -450,6 +595,17 @@
                         cars.forEach(c => {
                             const color = COLORES_GRADO[c.valor] || '#333';
                             html += `<span class="car-badge" style="display:inline-block;margin:1px 4px 1px 0;padding:1px 6px;border-radius:3px;background:${color}20;color:${color};font-weight:bold;font-size:0.85em">${c.nombre}: ${c.valor}</span>`;
+                        });
+                    } else {
+                        html += '<em style="font-size:0.85em;color:#999">—</em>';
+                    }
+                    html += '</td>';
+                    // Columna Etiquetas
+                    html += '<td class="tag-cell" data-id="' + id + '">';
+                    const etqs = userEtqs[id] || [];
+                    if (etqs.length > 0) {
+                        etqs.forEach(t => {
+                            html += `<span class="tag-badge">${t}</span>`;
                         });
                     } else {
                         html += '<em style="font-size:0.85em;color:#999">—</em>';
@@ -489,13 +645,14 @@
                         const id = btn.dataset.id;
                         const td = container.querySelector(`td.editable[data-id="${id}"]`);
                         const carCell = container.querySelector(`td.car-cell[data-id="${id}"]`);
+                        const etqCell = container.querySelector(`td.tag-cell[data-id="${id}"]`);
                         const valorActual = td.textContent;
 
                         if (btn.textContent.includes('Editar')) {
                             td.innerHTML = `<input type="text" value="${valorActual}" class="edit-input">`;
                             btn.textContent = '💾 Guardar';
 
-                            // Reemplazar badges con selects
+                            // Reemplazar badges de características con selects
                             if (carCell && listaCaracteristicas.length > 0) {
                                 const carRes = db.exec(
                                     "SELECT caracteristica_id, valor FROM usuario_caracteristicas WHERE usuario_id = ?;",
@@ -517,6 +674,27 @@
                                 selHtml += '</div>';
                                 carCell.innerHTML = selHtml;
                             }
+
+                            // Reemplazar tags con checkboxes
+                            if (etqCell && listaEtiquetas.length > 0) {
+                                const etqRes = db.exec(
+                                    "SELECT etiqueta_id FROM usuario_etiquetas WHERE usuario_id = ?;",
+                                    [parseInt(id)]);
+                                const selIds = new Set();
+                                if (etqRes.length > 0) {
+                                    etqRes[0].values.forEach(r => selIds.add(r[0]));
+                                }
+                                let chkHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+                                listaEtiquetas.forEach(e => {
+                                    const checked = selIds.has(e.id) ? 'checked' : '';
+                                    chkHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                        <input type="checkbox" class="etq-edit-check" data-etq-id="${e.id}" ${checked}>
+                                        ${e.nombre}
+                                    </label>`;
+                                });
+                                chkHtml += '</div>';
+                                etqCell.innerHTML = chkHtml;
+                            }
                         } else {
                             const input = td.querySelector('.edit-input');
                             const nuevoNombre = input.value.trim();
@@ -533,6 +711,14 @@
                                 const valor = sel.value;
                                 db.run("INSERT OR REPLACE INTO usuario_caracteristicas (usuario_id, caracteristica_id, valor) VALUES (?, ?, ?);",
                                     [parseInt(id), carId, valor]);
+                            });
+
+                            // Guardar etiquetas editadas
+                            const etqChecks = etqCell ? etqCell.querySelectorAll('.etq-edit-check:checked') : [];
+                            const selectedIds = Array.from(etqChecks).map(c => parseInt(c.dataset.etqId));
+                            db.run("DELETE FROM usuario_etiquetas WHERE usuario_id = ?;", [parseInt(id)]);
+                            selectedIds.forEach(eid => {
+                                db.run("INSERT INTO usuario_etiquetas (usuario_id, etiqueta_id) VALUES (?, ?);", [parseInt(id), eid]);
                             });
 
                             actualizarTabla();
@@ -602,12 +788,17 @@
             const valores = obtenerValoresCaracteristicas();
             guardarCaracteristicasUsuario(usuarioId, valores);
 
+            // Guardar etiquetas
+            const etqIds = obtenerIdsEtiquetasSeleccionadas();
+            guardarEtiquetasUsuario(usuarioId, etqIds);
+
             nombreInput.value = '';
             actualizarTabla();
         });
 
         // Botón: Limpiar tabla
         document.getElementById('clearBtn').addEventListener('click', () => {
+            db.run("DELETE FROM usuario_etiquetas;");
             db.run("DELETE FROM usuario_caracteristicas;");
             db.run("DELETE FROM usuarios;");
             actualizarTabla();
@@ -648,12 +839,15 @@
                 // Asegurar tablas auxiliares
                 db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
                 db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
+            db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
+                db.run("CREATE TABLE IF NOT EXISTS usuario_etiquetas (usuario_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (usuario_id, etiqueta_id));");
                 const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
                 if (cars.length === 0 || cars[0].values[0][0] === 0) {
                     db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
                 }
 
                 cargarCaracteristicas();
+                cargarEtiquetas();
                 actualizarTabla();
             };
             reader.readAsArrayBuffer(file);
