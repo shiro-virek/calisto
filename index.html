@@ -99,7 +99,6 @@
 
             // Crear una tabla de prueba inicial
             db.run("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
-            db.run("INSERT INTO usuarios (nombre) VALUES ('Usuario Inicial');");
 
             actualizarTabla();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
