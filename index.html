@@ -992,16 +992,6 @@
                     });
                 }
 
-                if (sortColumn !== null) {
-                    filas.sort((a, b) => {
-                        const valA = a[sortColumn];
-                        const valB = b[sortColumn];
-                        if (valA < valB) return sortAsc ? -1 : 1;
-                        if (valA > valB) return sortAsc ? 1 : -1;
-                        return 0;
-                    });
-                }
-
                 // Puntaje: cargar opciones de campos personalizados para el cálculo
                 const allCampOpts = {};
                 listaCampoPersonalizado.forEach(c => {
@@ -1041,6 +1031,22 @@
                     return Math.round(score * 100) / 100;
                 }
 
+                if (sortColumn === -1) {
+                    filas.sort((a, b) => {
+                        const pa = calcularPuntaje(a[0]);
+                        const pb = calcularPuntaje(b[0]);
+                        return sortAsc ? pa - pb : pb - pa;
+                    });
+                } else if (sortColumn !== null) {
+                    filas.sort((a, b) => {
+                        const valA = a[sortColumn];
+                        const valB = b[sortColumn];
+                        if (valA < valB) return sortAsc ? -1 : 1;
+                        if (valA > valB) return sortAsc ? 1 : -1;
+                        return 0;
+                    });
+                }
+
                 const colNombre = columnas.indexOf('nombre');
                 const colImagen = columnas.indexOf('imagen');
 
@@ -1053,7 +1059,8 @@
                     const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
                 });
-                html += '<th>Puntaje</th><th>Caract.</th><th>Etiquetas</th><th>Camp. Pers.</th><th>Acciones</th>';
+                const indicPunt = sortColumn === -1 ? (sortAsc ? ' ▲' : ' ▼') : '';
+                html += `<th data-col="-1" style="cursor:pointer">Puntaje${indicPunt}</th><th>Caract.</th><th>Etiquetas</th><th>Camp. Pers.</th><th>Acciones</th>`;
                 html += '</tr></thead><tbody>';
 
                 filas.forEach(fila => {
