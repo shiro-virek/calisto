@@ -1315,6 +1315,7 @@
                         html += '<th>Image</th>';
                         return;
                     }
+                    if (col === 'id' || col === 'date') return;
                     const indicator = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
                     html += `<th data-col="${i}" style="cursor:pointer">${col.charAt(0).toUpperCase() + col.slice(1)}${indicator}</th>`;
                 });
@@ -1329,6 +1330,7 @@
                     html += `<tr data-id="${id}" style="cursor:default">`;
                     row.forEach((cell, i) => {
                         const colName = columns[i];
+                        if (colName === 'id' || colName === 'date') return;
                         if (colName === 'image') {
                             if (cell) {
                                 html += `<td><img class="img-thumb view-img" data-file="${cell}" src="" title="${cell}"></td>`;
