@@ -903,6 +903,7 @@
 
         // Custom Fields Modal Buttons
         document.getElementById('manageFieldsBtn').addEventListener('click', () => {
+            loadCustomFields();
             document.getElementById('fieldsModal').style.display = 'flex';
             document.getElementById('fieldOptionsContainer').style.display = 'none';
             editingFieldOptionsId = null;
@@ -1746,19 +1747,20 @@
             reader.onload = function() {
                 const Uints = new Uint8Array(reader.result);
 
-                // Close legacy DB reference pointers allocation cleanup
                 if (db) db.close();
 
-                // Instantiate new relational tracking data mapping elements array
                 db = new SQL.Database(Uints);
 
-                // Ensure data tables constraints definitions compliance
+                db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
                 db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
                 db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
                 db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
                 db.run("CREATE TABLE IF NOT EXISTS entity_tags (entity_id INTEGER, tag_id INTEGER, PRIMARY KEY (entity_id, tag_id));");
+                db.run("CREATE TABLE IF NOT EXISTS custom_fields (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, description TEXT, type TEXT CHECK(type IN ('text','single_list','multi_list')));");
+                db.run("CREATE TABLE IF NOT EXISTS field_options (id INTEGER PRIMARY KEY AUTOINCREMENT, field_id INTEGER REFERENCES custom_fields(id), value TEXT, factor REAL);");
+                db.run("CREATE TABLE IF NOT EXISTS entity_field_value (entity_id INTEGER, field_id INTEGER, value TEXT, PRIMARY KEY (entity_id, field_id));");
                 db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
-            const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
+                const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
                 if (featuresCount.length === 0 || featuresCount[0].values[0][0] === 0) {
                     db.run("INSERT INTO features (name, factor) VALUES ('Height', 1.0);");
                 }
@@ -1769,7 +1771,9 @@
 
                 loadFeatures();
                 loadTags();
+                loadCustomFields();
                 loadConfiguration();
+                renderFilters();
                 updateTable();
             };
             reader.readAsArrayBuffer(file);
