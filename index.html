@@ -1369,10 +1369,12 @@
                     // Custom Fields Column
                     html += '<td class="field-cell" data-id="' + id + '" style="max-width:250px;font-size:0.85em">';
                     const cvals = userFieldVals[id] || {};
+                    let hasFieldVal = false;
                     if (customFieldsList.length > 0) {
                         customFieldsList.forEach(c => {
                             const v = cvals[c.id];
-                            if (v !== undefined) {
+                            if (v) {
+                                hasFieldVal = true;
                                 if (c.type === 'text') {
                                     html += `<div><strong>${c.name}:</strong> ${v}</div>`;
                                 } else {
@@ -1381,11 +1383,10 @@
                                     const labels = opts.filter(o => selectedIds.includes(String(o.id))).map(o => o.value);
                                     html += `<div><strong>${c.name}:</strong> ${labels.join(', ') || '—'}</div>`;
                                 }
-                            } else {
-                                html += `<div style="color:#999"><strong>${c.name}:</strong> —</div>`;
                             }
                         });
-                    } else {
+                    }
+                    if (!hasFieldVal) {
                         html += '<em style="color:#999">—</em>';
                     }
                     html += '</td>';
