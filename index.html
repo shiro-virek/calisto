@@ -115,6 +115,14 @@
         <h2>🔧 Configuración</h2>
 
         <div class="card" style="margin-bottom:12px">
+            <h3>Configuración General</h3>
+            <div class="card-body">
+            <label for="appNameInput">Nombre de la aplicación:</label>
+            <input type="text" id="appNameInput" placeholder="Mi App" style="width:100%;margin-top:4px">
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
             <h3>Gestión de Archivo</h3>
             <div class="card-body">
             <p>Subir o descargar la base de datos.</p>
@@ -298,6 +306,7 @@
             db.run("CREATE TABLE IF NOT EXISTS campos_personalizados (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, descripcion TEXT, tipo TEXT CHECK(tipo IN ('texto','lista_unico','lista_multiple')));");
             db.run("CREATE TABLE IF NOT EXISTS opciones_campo (id INTEGER PRIMARY KEY AUTOINCREMENT, campo_id INTEGER REFERENCES campos_personalizados(id), valor TEXT, factor REAL);");
             db.run("CREATE TABLE IF NOT EXISTS usuario_campo_valor (usuario_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, campo_id));");
+            db.run("CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT);");
 
             // Insertar característica por defecto
             const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
@@ -305,11 +314,18 @@
                 db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
             }
 
+            // Insertar nombre de app por defecto
+            const appCfg = db.exec("SELECT valor FROM configuracion WHERE clave = 'app_name';");
+            if (appCfg.length === 0 || appCfg[0].values.length === 0) {
+                db.run("INSERT INTO configuracion (clave, valor) VALUES ('app_name', 'Mi App');");
+            }
+
                 cargarCaracteristicas();
                 cargarEtiquetas();
                 cargarCamposPersonalizados();
                 renderizarFiltros();
                 actualizarTabla();
+                cargarConfiguracion();
         }).catch(err => console.error("Error al inicializar sql.js:", err));
 
         let sortColumn = null;
@@ -1677,6 +1693,11 @@
         });
 
         // BOTÓN EXPORTAR: Descargar base de datos como archivo .sqlite
+        function obtenerNombreApp() {
+            const input = document.getElementById('appNameInput');
+            return input ? input.value.trim() || 'Mi App' : 'Mi App';
+        }
+
         function descargarBaseDatos() {
             const binaryArray = db.export();
             const blob = new Blob([binaryArray], { type: "application/x-sqlite3" });
@@ -1689,13 +1710,28 @@
             const hora = String(ahora.getHours()).padStart(2, '0');
             const min = String(ahora.getMinutes()).padStart(2, '0');
             const seg = String(ahora.getSeconds()).padStart(2, '0');
-            a.download = `mi_base_de_datos_${año}-${mes}-${dia}_${hora}-${min}-${seg}.sqlite`;
+            const nombreApp = obtenerNombreApp().replace(/[^a-zA-Z0-9_\-]/g, '_');
+            a.download = `${nombreApp}_${año}-${mes}-${dia}_${hora}-${min}-${seg}.sqlite`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         }
 
         document.getElementById('downloadBtn').addEventListener('click', descargarBaseDatos);
+
+        // Cargar configuración desde la DB
+        function cargarConfiguracion() {
+            const res = db.exec("SELECT valor FROM configuracion WHERE clave = 'app_name';");
+            const nombre = (res.length > 0 && res[0].values.length > 0) ? res[0].values[0][0] : 'Mi App';
+            document.getElementById('appNameInput').value = nombre;
+            document.title = nombre;
+        }
+
+        // Guardar configuración al cambiar el input
+        document.getElementById('appNameInput').addEventListener('input', function() {
+            db.run("INSERT OR REPLACE INTO configuracion (clave, valor) VALUES ('app_name', ?);", [this.value]);
+            document.title = this.value.trim() || 'Mi App';
+        });
 
         let pendingSave = false;
         window.addEventListener('beforeunload', (e) => {
@@ -1732,13 +1768,19 @@
                 db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
             db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
                 db.run("CREATE TABLE IF NOT EXISTS usuario_etiquetas (usuario_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (usuario_id, etiqueta_id));");
+                db.run("CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT);");
                 const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
                 if (cars.length === 0 || cars[0].values[0][0] === 0) {
                     db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
                 }
+                const appCfg = db.exec("SELECT valor FROM configuracion WHERE clave = 'app_name';");
+                if (appCfg.length === 0 || appCfg[0].values.length === 0) {
+                    db.run("INSERT INTO configuracion (clave, valor) VALUES ('app_name', 'Mi App');");
+                }
 
                 cargarCaracteristicas();
                 cargarEtiquetas();
+                cargarConfiguracion();
                 actualizarTabla();
             };
             reader.readAsArrayBuffer(file);
