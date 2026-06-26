@@ -103,6 +103,10 @@
         .sidebar-toggle { position:fixed; top:10px; left:10px; z-index:101; padding:6px 12px; font-size:1.2em; cursor:pointer; border:none; border-radius:4px; background:#3498db; color:white; }
         .sidebar h2 { margin-top:0; color:#2c3e50; }
         .main-content { margin-left:0; transition:margin-left 0.3s ease; }
+        .filterable-list { max-height:220px; overflow-y:auto; border:1px solid #eee; border-radius:4px; padding:4px 6px; margin-top:4px; }
+        .filterable-list.compact { max-height:150px; }
+        .filter-input { width:100%; box-sizing:border-box; padding:4px 6px; font-size:0.85em; border:1px solid #ddd; border-radius:3px; margin-bottom:4px; }
+        .filter-input::placeholder { color:#aaa; }
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
@@ -356,6 +360,44 @@
             }
         }
         document.getElementById('pickDirBtn').addEventListener('click', pickImageDir);
+
+        function filterOptions(input) {
+            const q = input.value.toLowerCase().trim();
+            const container = input.nextElementSibling;
+            if (!container) return;
+            container.querySelectorAll('label').forEach(lbl => {
+                const name = lbl.dataset.name || lbl.textContent.toLowerCase();
+                lbl.style.display = !q || name.includes(q) ? '' : 'none';
+            });
+        }
+
+        function filterFieldOptions(input) {
+            const q = input.value.toLowerCase().trim();
+            const container = input.nextElementSibling;
+            if (!container) return;
+            container.querySelectorAll('fieldset').forEach(fs => {
+                const labels = fs.querySelectorAll('label[data-optname]');
+                let visibleCount = 0;
+                labels.forEach(lbl => {
+                    const name = lbl.dataset.optname || '';
+                    const match = !q || name.includes(q);
+                    lbl.style.display = match ? '' : 'none';
+                    if (match) visibleCount++;
+                });
+                let noMatch = fs.querySelector('.no-match-msg');
+                if (visibleCount === 0) {
+                    if (!noMatch) {
+                        noMatch = document.createElement('div');
+                        noMatch.className = 'no-match-msg';
+                        noMatch.style.cssText = 'font-size:0.8em;color:#999;padding:2px 0';
+                        noMatch.textContent = '(no matching options)';
+                        fs.querySelector('div')?.appendChild(noMatch);
+                    }
+                } else if (noMatch) {
+                    noMatch.remove();
+                }
+            });
+        }
 
         // File System Access API: save image
         async function saveImageFS(blob, filename) {
@@ -636,10 +678,12 @@
                 container.innerHTML = '<em>No tags defined.</em>';
                 return;
             }
-            let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
-            [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
+            const sorted = [...tagsList].sort((a, b) => a.name.localeCompare(b.name));
+            let html = '<input type="text" class="filter-input" placeholder="Filter tags..." oninput="filterOptions(this)">';
+            html += '<div class="filterable-list compact">';
+            sorted.forEach(e => {
                 const checked = selectedIds.includes(e.id) ? 'checked' : '';
-                html += `<label class="tag-check">
+                html += `<label class="tag-check" data-name="${e.name.toLowerCase()}">
                     <input type="checkbox" class="tag-checkbox" data-tag-id="${e.id}" ${checked}>
                     ${e.name}
                 </label>`;
@@ -839,30 +883,31 @@
             const container = document.getElementById('fieldInputsContainer');
             container.innerHTML = '';
             if (customFieldsList.length === 0) return;
-            let html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+            let html = '<input type="text" class="filter-input" placeholder="Filter option values..." oninput="filterFieldOptions(this)">';
+            html += '<div class="filterable-list">';
             [...customFieldsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
                 if (c.type === 'text') {
                     const val = savedValues[c.id] || '';
-                    html += `<label style="display:flex;flex-direction:column;gap:2px;font-size:0.9em">
+                    html += `<label style="display:flex;flex-direction:column;gap:2px;font-size:0.9em;margin-bottom:6px">
                         ${c.name} <input type="text" class="field-input-text" data-field-id="${c.id}" value="${val}" style="padding:2px 6px">
                     </label>`;
                 } else {
                     const opts = getFieldOptions(c.id);
                     const isMulti = c.type === 'multi_list';
                     const saved = savedValues[c.id] ? savedValues[c.id].split(',').filter(Boolean) : [];
-                    html += `<fieldset style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;margin:0">
+                    html += `<fieldset style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;margin:0 0 6px 0">
                         <legend style="font-size:0.85em">${c.name} ${isMulti ? '(multiple)' : ''}</legend>
                         <div style="display:flex;flex-wrap:wrap;gap:4px">`;
                     opts.forEach(o => {
                         const oid = String(o.id);
                         if (isMulti) {
                             const checked = saved.includes(oid) ? 'checked' : '';
-                            html += `<label style="font-size:0.85em;white-space:nowrap">
+                            html += `<label data-optname="${o.value.toLowerCase()}" style="font-size:0.85em;white-space:nowrap">
                                 <input type="checkbox" class="field-input-chk" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.value}
                             </label>`;
                         } else {
                             const selected = saved.includes(oid) ? 'selected' : '';
-                            html += `<label style="font-size:0.85em;white-space:nowrap">
+                            html += `<label data-optname="${o.value.toLowerCase()}" style="font-size:0.85em;white-space:nowrap">
                                 <input type="radio" class="field-input-radio" name="field_radio_${c.id}" data-field-id="${c.id}" data-opt-id="${o.id}" ${selected ? 'checked' : ''}> ${o.value}
                             </label>`;
                         }
@@ -870,7 +915,7 @@
                     if (!isMulti && opts.length > 0) {
                         const hasChecked = opts.some(o => saved.includes(String(o.id)));
                         if (!hasChecked) {
-                            html += `<label style="font-size:0.85em;white-space:nowrap;color:#999">
+                            html += `<label data-optname="(none)" style="font-size:0.85em;white-space:nowrap;color:#999">
                                 <input type="radio" class="field-input-radio" name="field_radio_${c.id}" data-field-id="${c.id}" data-opt-id="" checked> (none)
                             </label>`;
                         }
@@ -1065,33 +1110,53 @@
             // Tags filters
             if (tagsList.length > 0) {
                 html += '<div class="filter-group"><h4>Tags</h4>';
+                html += '<input type="text" class="filter-input" placeholder="Filter tags..." oninput="filterOptions(this)">';
+                html += '<div class="filterable-list compact">';
                 [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                     const chkId = `filter_tag_${e.id}`;
                     const checked = document.getElementById(chkId) ? document.getElementById(chkId).checked : false;
-                    html += `<label><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.name}</label><br>`;
+                    html += `<label data-name="${e.name.toLowerCase()}"><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.name}</label><br>`;
                 });
-                html += '</div>';
+                html += '</div></div>';
             }
 
             // Custom fields filters
             if (customFieldsList.length > 0) {
-                [...customFieldsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
-                    html += `<div class="filter-group"><h4>${c.name}</h4>`;
+                const sortedCf = [...customFieldsList].sort((a, b) => a.name.localeCompare(b.name));
+                html += '<div class="filter-group" style="flex:1 1 100%"><h4>Custom Fields</h4>';
+                html += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+                sortedCf.forEach(c => {
+                    html += `<div class="filter-group" style="flex:1;min-width:160px">`;
+                    html += `<h4>${c.name}</h4>`;
                     const inpId = `filter_field_${c.id}`;
                     if (c.type === 'text') {
                         const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
                         html += `<input type="text" id="${inpId}" placeholder="Filter..." value="${cur}" style="width:90%">`;
                     } else {
-                        const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
                         const opts = getFieldOptions(c.id);
-                        html += `<select id="${inpId}" style="width:90%"><option value="">—</option>`;
+                        const isMulti = c.type === 'multi_list';
+                        html += '<input type="text" class="filter-input" placeholder="Filter options..." oninput="filterFieldOptions(this)">';
+                        html += '<div class="filterable-list compact">';
+                        const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
+                        const curIds = cur ? cur.split(',').map(Number) : [];
                         opts.forEach(o => {
-                            html += `<option value="${o.id}" ${cur === String(o.id) ? 'selected' : ''}>${o.value}</option>`;
+                            if (isMulti) {
+                                const checked = curIds.includes(o.id) ? 'checked' : '';
+                                html += `<label data-optname="${o.value.toLowerCase()}" style="font-size:0.85em;white-space:nowrap;display:block">
+                                    <input type="checkbox" class="filter-field-chk" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.value}
+                                </label>`;
+                            } else {
+                                const checked = curIds.includes(o.id) ? 'checked' : '';
+                                html += `<label data-optname="${o.value.toLowerCase()}" style="font-size:0.85em;white-space:nowrap;display:block">
+                                    <input type="radio" name="filter_radio_${c.id}" class="filter-field-radio" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked ? 'checked' : ''}> ${o.value}
+                                </label>`;
+                            }
                         });
-                        html += `</select>`;
+                        html += '</div>';
                     }
                     html += '</div>';
                 });
+                html += '</div></div>';
             }
 
             container.innerHTML = html;
@@ -1122,8 +1187,17 @@
             });
 
             customFieldsList.forEach(c => {
-                const el = document.getElementById(`filter_field_${c.id}`);
-                if (el && el.value) f.field[c.id] = el.value;
+                if (c.type === 'multi_list') {
+                    const chks = document.querySelectorAll(`.filter-field-chk[data-field-id="${c.id}"]:checked`);
+                    const vals = Array.from(chks).map(el => parseInt(el.dataset.optId)).filter(v => !isNaN(v));
+                    if (vals.length > 0) f.field[c.id] = vals.join(',');
+                } else if (c.type === 'single_list') {
+                    const radio = document.querySelector(`.filter-field-radio[data-field-id="${c.id}"]:checked`);
+                    if (radio) f.field[c.id] = String(radio.dataset.optId);
+                } else {
+                    const el = document.getElementById(`filter_field_${c.id}`);
+                    if (el && el.value) f.field[c.id] = el.value;
+                }
             });
 
             return f;
@@ -1182,8 +1256,13 @@
                     const field = customFieldsList.find(c => c.id === parseInt(fieldId));
                     if (field && field.type === 'text') {
                         if (!String(entityVal).toLowerCase().includes(String(expectedVal).toLowerCase())) return false;
+                    } else if (field && field.type === 'multi_list') {
+                        const expectedIds = String(expectedVal).split(',').filter(Boolean);
+                        const entityIds = String(entityVal).split(',').filter(Boolean);
+                        const hasAny = expectedIds.some(id => entityIds.includes(id));
+                        if (!hasAny) return false;
                     } else {
-                        const ids = String(entityVal).split('.').filter(Boolean);
+                        const ids = String(entityVal).split(',').filter(Boolean);
                         if (!ids.includes(String(expectedVal))) return false;
                     }
                 }
@@ -1476,10 +1555,11 @@
                                 if (tagRes.length > 0) {
                                     tagRes[0].values.forEach(r => selIds.add(r[0]));
                                 }
-                                let chkHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+                                let chkHtml = '<input type="text" class="filter-input" placeholder="Filter tags..." oninput="filterOptions(this)">';
+                                chkHtml += '<div class="filterable-list compact">';
                                 [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                                     const checked = selIds.has(e.id) ? 'checked' : '';
-                                    chkHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                    chkHtml += `<label data-name="${e.name.toLowerCase()}" style="font-size:0.85em;white-space:nowrap;display:block">
                                         <input type="checkbox" class="tag-edit-check" data-tag-id="${e.id}" ${checked}>
                                         ${e.name}
                                     </label>`;
@@ -1495,7 +1575,8 @@
                                 if (cv.length > 0) {
                                     cv[0].values.forEach(r => { saved[r[0]] = r[1]; });
                                 }
-                                let fieldEditHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+                                let fieldEditHtml = '<input type="text" class="filter-input" placeholder="Filter option values..." oninput="filterFieldOptions(this)">';
+                                fieldEditHtml += '<div class="filterable-list" style="max-height:250px">';
                                 customFieldsList.forEach(c => {
                                     if (c.type === 'text') {
                                         const val = saved[c.id] || '';
@@ -1512,12 +1593,12 @@
                                             const oid = String(o.id);
                                             if (isMulti) {
                                                 const checked = savedIds.includes(oid) ? 'checked' : '';
-                                                fieldEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                                fieldEditHtml += `<label data-optname="${o.value.toLowerCase()}" style="font-size:0.85em;white-space:nowrap">
                                                     <input type="checkbox" class="field-edit-chk" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.value}
                                                 </label>`;
                                             } else {
                                                 const checked = savedIds.includes(oid) ? 'checked' : '';
-                                                fieldEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                                fieldEditHtml += `<label data-optname="${o.value.toLowerCase()}" style="font-size:0.85em;white-space:nowrap">
                                                     <input type="radio" class="field-edit-radio" name="field_edit_radio_${c.id}_${id}" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.value}
                                                 </label>`;
                                             }
@@ -1525,7 +1606,7 @@
                                         fieldEditHtml += '</fieldset>';
                                     }
                                 });
-                                fieldEditHtml += '</div>';
+                                fieldEditHtml += '</div></div>';
                                 fieldCell.innerHTML = fieldEditHtml;
                             }
                         } else {
