@@ -1643,7 +1643,14 @@
             const blob = new Blob([binaryArray], { type: "application/x-sqlite3" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            a.download = "mi_base_de_datos.sqlite";
+            const ahora = new Date();
+            const año = ahora.getFullYear();
+            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+            const dia = String(ahora.getDate()).padStart(2, '0');
+            const hora = String(ahora.getHours()).padStart(2, '0');
+            const min = String(ahora.getMinutes()).padStart(2, '0');
+            const seg = String(ahora.getSeconds()).padStart(2, '0');
+            a.download = `mi_base_de_datos_${año}-${mes}-${dia}_${hora}-${min}-${seg}.sqlite`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
