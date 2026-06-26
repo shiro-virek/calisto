@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQLite Portátil con sql.js</title>
+    <title>Portable SQLite with sql.js</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -78,9 +78,9 @@
         .badge-D { color: #00bcd4; font-weight: bold; }
         .badge-E { color: #9b59b6; font-weight: bold; }
         .badge-F { color: #e91e90; font-weight: bold; }
-        .car-item { margin-right: 8px; display: inline-block; }
-        .car-cell { max-width: 200px; }
-        .car-select { margin: 0 6px 0 2px; padding: 2px 4px; }
+        .feature-item { margin-right: 8px; display: inline-block; }
+        .feature-cell { max-width: 200px; }
+        .feature-select { margin: 0 6px 0 2px; padding: 2px 4px; }
         .tag-badge { display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; border-radius:10px; background:#34495e; color:white; font-size:0.8em; font-weight:bold; }
         .tag-cell { max-width: 220px; }
         .tag-check { margin-right:8px; display:inline-flex; align-items:center; gap:3px; }
@@ -112,167 +112,165 @@
     <button class="sidebar-toggle" id="sidebarToggle">☰</button>
 
     <div class="sidebar" id="sidebar">
-        <h2>🔧 Configuración</h2>
+        <h2>🔧 Settings</h2>
 
         <div class="card" style="margin-bottom:12px">
-            <h3>Configuración General</h3>
+            <h3>General Configuration</h3>
             <div class="card-body">
-            <label for="appNameInput">Nombre de la aplicación:</label>
-            <input type="text" id="appNameInput" placeholder="Mi App" style="width:100%;margin-top:4px">
+                <label for="appNameInput">Application Name:</label>
+                <input type="text" id="appNameInput" placeholder="My App" style="width:100%;margin-top:4px">
             </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
-            <h3>Gestión de Archivo</h3>
+            <h3>File Management</h3>
             <div class="card-body">
-            <p>Subir o descargar la base de datos.</p>
-            <input type="file" id="uploadInput" accept=".sqlite,.db" style="width:100%"><br><br>
-            <button id="downloadBtn" class="success">⬇️ Descargar .sqlite</button>
+                <p>Upload or download the database.</p>
+                <input type="file" id="uploadInput" accept=".sqlite,.db" style="width:100%"><br><br>
+                <button id="downloadBtn" class="success">⬇️ Download .sqlite</button>
             </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
-            <h3>Carpeta de Imágenes</h3>
+            <h3>Images Folder</h3>
             <div class="card-body">
-            <p>Selecciona la carpeta para imágenes.</p>
-            <button id="pickDirBtn">📁 Seleccionar</button>
-            <span id="dirStatus" style="display:block;margin-top:4px;font-size:0.85em;color:#999;">Ninguna</span>
+                <p>Select the folder for images.</p>
+                <button id="pickDirBtn">📁 Select</button>
+                <span id="dirStatus" style="display:block;margin-top:4px;font-size:0.85em;color:#999;">None</span>
             </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
-            <h3>Características</h3>
+            <h3>Features</h3>
             <div class="card-body">
-            <p>Valor único: F/E/D/C/B/A/S.</p>
-            <button id="gestionCarBtn">⚙️ Gestionar</button>
+                <p>Unique value: F/E/D/C/B/A/S.</p>
+                <button id="manageFeaturesBtn">⚙️ Manage</button>
             </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
-            <h3>Etiquetas</h3>
+            <h3>Tags</h3>
             <div class="card-body">
-            <p>Multiselección.</p>
-            <button id="gestionEtqBtn">🏷️ Gestionar</button>
+                <p>Multi-selection.</p>
+                <button id="manageTagsBtn">🏷️ Manage</button>
             </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
-            <h3>Campos Personalizados</h3>
+            <h3>Custom Fields</h3>
             <div class="card-body">
-            <p>Texto libre, lista única o múltiple.</p>
-            <button id="gestionCampBtn">🔧 Gestionar</button>
+                <p>Free text, single or multiple list.</p>
+                <button id="manageFieldsBtn">🔧 Manage</button>
             </div>
         </div>
     </div>
 
     <div class="main-content">
 
-    <div class="card" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer; margin-top:50px">
-        <h3>Importación por Arrastrar y Soltar</h3>
-        <div class="card-body">
-        <p>Arrastra una o varias imágenes aquí para crear automáticamente una entidad por cada una.</p>
-        <p style="font-size:0.9em;color:#666">El nombre de la entidad se tomará del nombre del archivo (sin extensión).</p>
-        <div id="dropStatus" style="margin-top:8px;color:#999;font-size:0.9em">Suelta las imágenes aquí</div>
+        <div class="card" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer; margin-top:50px">
+            <h3>Drag & Drop Import</h3>
+            <div class="card-body">
+                <p>Drag one or multiple images here to automatically create an entity for each one.</p>
+                <p style="font-size:0.9em;color:#666">The entity name will be taken from the file name (without extension).</p>
+                <div id="dropStatus" style="margin-top:8px;color:#999;font-size:0.9em">Drop images here</div>
+            </div>
         </div>
-    </div>
 
-    <div id="modalCampos" class="modal-overlay">
-        <div class="modal-content" style="max-width:800px">
-            <h3>Gestión de Campos Personalizados</h3>
-            <div id="camposListContainer">
-                <table id="camposTable" style="margin-bottom:10px">
-                    <thead><tr><th>Nombre</th><th>Descripción</th><th>Tipo</th><th>Opciones</th><th></th></tr></thead>
-                    <tbody id="camposTableBody"></tbody>
+        <div id="fieldsModal" class="modal-overlay">
+            <div class="modal-content" style="max-width:800px">
+                <h3>Manage Custom Fields</h3>
+                <div id="fieldsListContainer">
+                    <table id="fieldsTable" style="margin-bottom:10px">
+                        <thead><tr><th>Name</th><th>Description</th><th>Type</th><th>Options</th><th></th></tr></thead>
+                        <tbody id="fieldsTableBody"></tbody>
+                    </table>
+                </div>
+                <div style="border-top:1px solid #ddd;padding-top:10px;margin-top:6px">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+                        <input type="text" id="newFieldFieldName" placeholder="Field name" style="flex:2">
+                        <input type="text" id="newFieldDesc" placeholder="Description" style="flex:2">
+                        <select id="newFieldType" style="flex:1">
+                            <option value="text">Free text</option>
+                            <option value="single_list">List (single)</option>
+                            <option value="multi_list">List (multiple)</option>
+                        </select>
+                        <button id="addFieldBtn">➕ Add Field</button>
+                    </div>
+                    <div id="fieldOptionsContainer" style="display:none;border:1px solid #ddd;padding:8px;border-radius:4px;margin-top:4px">
+                        <strong>Field Options:</strong>
+                        <div id="fieldOptionsContent" style="margin-top:4px"></div>
+                    </div>
+                </div>
+                <div style="margin-top:8px">
+                    <button id="closeFieldsBtn" style="background-color:#e74c3c;">✖ Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tagsModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Manage Tags</h3>
+                <table id="tagsTable" style="margin-bottom:10px">
+                    <thead><tr><th>Name</th><th>Factor</th><th>Description</th><th></th></tr></thead>
+                    <tbody id="tagsTableBody"></tbody>
                 </table>
-            </div>
-            <div style="border-top:1px solid #ddd;padding-top:10px;margin-top:6px">
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-                    <input type="text" id="newCampNombre" placeholder="Nombre del campo" style="flex:2">
-                    <input type="text" id="newCampDesc" placeholder="Descripción" style="flex:2">
-                    <select id="newCampTipo" style="flex:1">
-                        <option value="texto">Texto libre</option>
-                        <option value="lista_unico">Lista (único)</option>
-                        <option value="lista_multiple">Lista (múltiple)</option>
-                    </select>
-                    <button id="addCampBtn">➕ Añadir Campo</button>
-                </div>
-                <div id="opcionesCampoContainer" style="display:none;border:1px solid #ddd;padding:8px;border-radius:4px;margin-top:4px">
-                    <strong>Opciones del campo:</strong>
-                    <div id="opcionesCampoContent" style="margin-top:4px"></div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <input type="text" id="newTagFieldName" placeholder="Name (e.g., OLD, SHORT)" style="flex:1" pattern="[A-Z0-9_]+" title="Uppercase, numbers and underscores only">
+                    <input type="number" id="newTagFactor" placeholder="Factor" step="0.01" style="flex:0 0 80px">
+                    <input type="text" id="newTagDesc" placeholder="Description" style="flex:2">
+                    <button id="addTagBtn">➕ Add</button>
+                    <button id="closeTagsBtn" style="background-color:#e74c3c;">✖ Close</button>
                 </div>
             </div>
-            <div style="margin-top:8px">
-                <button id="closeCampBtn" style="background-color:#e74c3c;">✖ Cerrar</button>
+        </div>
+
+        <div id="featuresModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Manage Features</h3>
+                <table id="featuresTable" style="margin-bottom:10px">
+                    <thead><tr><th>Name</th><th>Factor</th><th></th></tr></thead>
+                    <tbody id="featuresTableBody"></tbody>
+                </table>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <input type="text" id="newFeatureFieldName" placeholder="Name (e.g., Height)" style="flex:2">
+                    <input type="number" id="newFeatureFactor" placeholder="Factor" step="0.01" style="flex:1">
+                    <button id="addFeatureBtn">➕ Add</button>
+                    <button id="closeFeaturesBtn" style="background-color:#e74c3c;">✖ Close</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="modalEtiquetas" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Gestión de Etiquetas</h3>
-            <table id="etqTable" style="margin-bottom:10px">
-                <thead><tr><th>Nombre</th><th>Factor</th><th>Descripción</th><th></th></tr></thead>
-                <tbody id="etqTableBody"></tbody>
-            </table>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <input type="text" id="newEtqNombre" placeholder="Nombre (ej: OLD, SHORT)" style="flex:1" pattern="[A-Z0-9_]+" title="Solo mayúsculas, números y guión bajo">
-                <input type="number" id="newEtqFactor" placeholder="Factor" step="0.01" style="flex:0 0 80px">
-                <input type="text" id="newEtqDesc" placeholder="Descripción" style="flex:2">
-                <button id="addEtqBtn">➕ Añadir</button>
-                <button id="closeEtqBtn" style="background-color:#e74c3c;">✖ Cerrar</button>
+        <div class="card">
+            <h3>Operations</h3>
+            <div class="card-body">
+                <label for="nameInput">Name:</label>
+                <input type="text" id="nameInput" placeholder="Enter a name">
+                <div id="featureInputsContainer" style="margin-top:8px"></div>
+                <div id="tagInputsContainer" style="margin-top:8px"></div>
+                <div id="fieldInputsContainer" style="margin-top:8px"></div>
+                <button id="insertBtn" style="margin-top:8px">➕ Insert</button>
+                <button id="clearBtn" style="background-color: #e74c3c;">🧹 Clear Table</button>
             </div>
         </div>
-    </div>
 
-    <div id="modalCaracteristicas" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Gestión de Características</h3>
-            <table id="carTable" style="margin-bottom:10px">
-                <thead><tr><th>Nombre</th><th>Factor</th><th></th></tr></thead>
-                <tbody id="carTableBody"></tbody>
-            </table>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <input type="text" id="newCarNombre" placeholder="Nombre (ej: Altura)" style="flex:2">
-                <input type="number" id="newCarFactor" placeholder="Factor" step="0.01" style="flex:1">
-                <button id="addCarBtn">➕ Añadir</button>
-                <button id="closeCarBtn" style="background-color:#e74c3c;">✖ Cerrar</button>
+        <div class="card" id="filterCard">
+            <h3>Filters</h3>
+            <div class="card-body">
+                <div id="filterContainer" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start"></div>
             </div>
         </div>
-    </div>
 
-    <div class="card">
-        <h3>Operaciones</h3>
-        <div class="card-body">
-        <label for="nombreInput">Nombre:</label>
-        <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
-        <div id="carInputsContainer" style="margin-top:8px"></div>
-        <div id="etqInputsContainer" style="margin-top:8px"></div>
-        <div id="campInputsContainer" style="margin-top:8px"></div>
-        <button id="insertBtn" style="margin-top:8px">➕ Insertar</button>
-        <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
+        <div class="card">
+            <h3>Entities</h3>
+            <div class="card-body">
+                <div id="tableContainer">No data loaded or table is empty.</div>
+            </div>
         </div>
-    </div>
 
-    <div class="card" id="filterCard">
-        <h3>Filtros</h3>
-        <div class="card-body">
-        <div id="filterContainer" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start"></div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>Entidades</h3>
-        <div class="card-body">
-        <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
-        </div>
-    </div>
-
-    </div> <!-- /main-content -->
-
-    <input type="file" id="imageInput" accept="image/*" style="display:none">
+    </div> <input type="file" id="imageInput" accept="image/*" style="display:none">
     <div id="imageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
         <div style="background:white; padding:20px; border-radius:8px; max-width:90%; max-height:90%;">
-            <button id="closeModalBtn" style="margin-bottom:10px;">✖ Cerrar</button>
+            <button id="closeModalBtn" style="margin-bottom:10px;">✖ Close</button>
             <br>
             <img id="modalImage" style="max-width:100%; max-height:80vh;">
         </div>
@@ -282,51 +280,48 @@
         let db = null;
         let SQL = null;
 
-        // Configuración inicial de sql.js
+        // Initial setup for sql.js
         const config = {
-            // Indicamos de dónde obtener el binario compilado WebAssembly (.wasm)
+            // Specify where to fetch the WebAssembly compiled binary (.wasm)
             locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
         };
 
-        // Inicializar el motor SQL al cargar la página
+        // Initialize SQL engine on page load
         initSqlJs(config).then(function(sqlModule){
             SQL = sqlModule;
-            // Crear una base de datos vacía en memoria por defecto
+            // Create an empty database in memory by default
             db = new SQL.Database();
 
-            // Crear tablas
-            db.run("CREATE TABLE IF NOT EXISTS entidades (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, imagen TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
-            db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
-            db.run("CREATE TABLE IF NOT EXISTS entidad_caracteristicas (entidad_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, caracteristica_id));");
-                db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
-                db.run("CREATE TABLE IF NOT EXISTS entidad_etiquetas (entidad_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (entidad_id, etiqueta_id));");
-                db.run("CREATE TABLE IF NOT EXISTS campos_personalizados (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, descripcion TEXT, tipo TEXT CHECK(tipo IN ('texto','lista_unico','lista_multiple')));");
-                db.run("CREATE TABLE IF NOT EXISTS opciones_campo (id INTEGER PRIMARY KEY AUTOINCREMENT, campo_id INTEGER REFERENCES campos_personalizados(id), valor TEXT, factor REAL);");
-                db.run("CREATE TABLE IF NOT EXISTS entidad_campo_valor (entidad_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, campo_id));");
-            db.run("CREATE TABLE IF NOT EXISTS campos_personalizados (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, descripcion TEXT, tipo TEXT CHECK(tipo IN ('texto','lista_unico','lista_multiple')));");
-            db.run("CREATE TABLE IF NOT EXISTS opciones_campo (id INTEGER PRIMARY KEY AUTOINCREMENT, campo_id INTEGER REFERENCES campos_personalizados(id), valor TEXT, factor REAL);");
-            db.run("CREATE TABLE IF NOT EXISTS entidad_campo_valor (entidad_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, campo_id));");
-            db.run("CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT);");
+            // Create tables
+            db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+            db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
+            db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
+            db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
+            db.run("CREATE TABLE IF NOT EXISTS entity_tags (entity_id INTEGER, tag_id INTEGER, PRIMARY KEY (entity_id, tag_id));");
+            db.run("CREATE TABLE IF NOT EXISTS custom_fields (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, description TEXT, type TEXT CHECK(type IN ('text','single_list','multi_list')));");
+            db.run("CREATE TABLE IF NOT EXISTS field_options (id INTEGER PRIMARY KEY AUTOINCREMENT, field_id INTEGER REFERENCES custom_fields(id), value TEXT, factor REAL);");
+            db.run("CREATE TABLE IF NOT EXISTS entity_field_value (entity_id INTEGER, field_id INTEGER, value TEXT, PRIMARY KEY (entity_id, field_id));");
+            db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
 
-            // Insertar característica por defecto
-            const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
-            if (cars.length === 0 || cars[0].values[0][0] === 0) {
-                db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
+            // Insert default feature
+            const featuresCount = db.exec("SELECT COUNT* as cnt FROM features;");
+            if (featuresCount.length === 0 || featuresCount[0].values[0][0] === 0) {
+                db.run("INSERT INTO features (name, factor) VALUES ('Height', 1.0);");
             }
 
-            // Insertar nombre de app por defecto
-            const appCfg = db.exec("SELECT valor FROM configuracion WHERE clave = 'app_name';");
+            // Insert default application name
+            const appCfg = db.exec("SELECT value FROM configuration WHERE key = 'app_name';");
             if (appCfg.length === 0 || appCfg[0].values.length === 0) {
-                db.run("INSERT INTO configuracion (clave, valor) VALUES ('app_name', 'Mi App');");
+                db.run("INSERT INTO configuration (key, value) VALUES ('app_name', 'My App');");
             }
 
-                cargarCaracteristicas();
-                cargarEtiquetas();
-                cargarCamposPersonalizados();
-                renderizarFiltros();
-                actualizarTabla();
-                cargarConfiguracion();
-        }).catch(err => console.error("Error al inicializar sql.js:", err));
+            loadFeatures();
+            loadTags();
+            loadCustomFields();
+            renderFilters();
+            updateTable();
+            loadConfiguration();
+        }).catch(err => console.error("Error initializing sql.js:", err));
 
         let sortColumn = null;
         let sortAsc = true;
@@ -339,90 +334,90 @@
             document.getElementById('sidebar').classList.toggle('open');
         });
 
-        // Inicializar carpeta de imágenes
+        // Initialize images folder
         document.getElementById('pickDirBtn').addEventListener('click', async () => {
             try {
                 baseDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                 imagesDirHandle = await baseDirHandle.getDirectoryHandle('images', { create: true });
-                document.getElementById('dirStatus').textContent = '✅ Carpeta: ' + baseDirHandle.name + '/images';
+                document.getElementById('dirStatus').textContent = '✅ Folder: ' + baseDirHandle.name + '/images';
                 document.getElementById('dirStatus').style.color = '#2ecc71';
             } catch (err) {
                 if (err.name !== 'AbortError') {
-                    alert('Error al seleccionar carpeta: ' + err.message);
+                    alert('Error selecting folder: ' + err.message);
                 }
             }
         });
 
-        // File System Access API: guardar imagen
-        async function guardarImagenFS(blob, nombreArchivo) {
-            if (!imagesDirHandle) throw new Error('No hay carpeta de imágenes seleccionada');
-            const fileHandle = await imagesDirHandle.getFileHandle(nombreArchivo, { create: true });
+        // File System Access API: save image
+        async function saveImageFS(blob, filename) {
+            if (!imagesDirHandle) throw new Error('No images folder selected');
+            const fileHandle = await imagesDirHandle.getFileHandle(filename, { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(blob);
             await writable.close();
         }
 
-        // File System Access API: leer imagen y devolver URL
-        async function obtenerURLImagen(nombreArchivo) {
-            if (!imagesDirHandle) throw new Error('No hay carpeta de imágenes seleccionada');
-            const fileHandle = await imagesDirHandle.getFileHandle(nombreArchivo);
+        // File System Access API: read image and return URL
+        async function getImageURL(filename) {
+            if (!imagesDirHandle) throw new Error('No images folder selected');
+            const fileHandle = await imagesDirHandle.getFileHandle(filename);
             const file = await fileHandle.getFile();
             return URL.createObjectURL(file);
         }
 
-        // File System Access API: eliminar imagen
-        async function eliminarImagenFS(nombreArchivo) {
+        // File System Access API: delete image
+        async function deleteImageFS(filename) {
             if (!imagesDirHandle) return;
             try {
-                await imagesDirHandle.removeEntry(nombreArchivo);
+                await imagesDirHandle.removeEntry(filename);
             } catch (_) {}
         }
 
-        // Manejar subida de imagen desde input
+        // Handle image upload from input
         document.getElementById('imageInput').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file || uploadImageId === null) return;
 
             try {
                 if (!imagesDirHandle) {
-                    alert('Primero selecciona una carpeta de imágenes en la sección 2.');
+                    alert('Please select an images folder in section 2 first.');
                     return;
                 }
 
-                const stmt = db.prepare("SELECT nombre, imagen FROM entidades WHERE id = ?");
+                const stmt = db.prepare("SELECT name, image FROM entities WHERE id = ?");
                 stmt.bind([uploadImageId]);
                 if (!stmt.step()) {
-                    alert('Registro no encontrado.');
+                    alert('Record not found.');
                     stmt.free();
                     return;
                 }
                 const row = stmt.getAsObject();
                 stmt.free();
 
-                const nombreActual = row.nombre;
-                const imagenActual = row.imagen;
+                const currentName = row.name;
+                const currentImage = row.image;
 
-                if (imagenActual) {
-                    await eliminarImagenFS(imagenActual);
+                if (currentImage) {
+                    await deleteImageFS(currentImage);
                 }
 
                 const ext = file.name.split('.').pop() || 'png';
                 const randomId = Math.random().toString(36).substring(2, 10);
-                const nombreArchivo = `${nombreActual}_${randomId}.${ext}`;
+                const filename = `${currentName}_${randomId}.${ext}`;
                 const blob = new Blob([await file.arrayBuffer()], { type: file.type });
 
-                await guardarImagenFS(blob, nombreArchivo);
-                db.run("UPDATE entidades SET imagen = ? WHERE id = ?;", [nombreArchivo, uploadImageId]);
-                actualizarTabla();
+                await saveImageFS(blob, filename);
+                db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, uploadImageId]);
+                updateTable();
             } catch (err) {
-                alert('Error al subir la imagen: ' + err.message);
+                alert('Error uploading image: ' + err.message);
             }
 
             uploadImageId = null;
             e.target.value = '';
         });
 
-        // Cerrar modal de imagen
+        // Close image modal
         document.getElementById('closeModalBtn').addEventListener('click', () => {
             document.getElementById('imageModal').style.display = 'none';
         });
@@ -432,80 +427,80 @@
             }
         });
 
-        // CRUD Características
-        let listaCaracteristicas = [];
+        // CRUD Features
+        let featuresList = [];
 
-        function cargarCaracteristicas() {
-            const res = db.exec("SELECT id, nombre, factor FROM caracteristicas ORDER BY id;");
-            listaCaracteristicas = [];
+        function loadFeatures() {
+            const res = db.exec("SELECT id, name, factor FROM features ORDER BY id;");
+            featuresList = [];
             if (res.length > 0) {
-                listaCaracteristicas = res[0].values.map(f => ({ id: f[0], nombre: f[1], factor: f[2] }));
+                featuresList = res[0].values.map(f => ({ id: f[0], name: f[1], factor: f[2] }));
             }
-            renderizarCaracteristicas();
-            renderizarInputsCaracteristicas();
-            if (document.getElementById('filterContainer')) renderizarFiltros();
+            renderFeatures();
+            renderFeatureInputs();
+            if (document.getElementById('filterContainer')) renderFilters();
         }
 
-        function renderizarCaracteristicas() {
-            const tbody = document.getElementById('carTableBody');
+        function renderFeatures() {
+            const tbody = document.getElementById('featuresTableBody');
             tbody.innerHTML = '';
-            listaCaracteristicas.forEach(c => {
+            featuresList.forEach(c => {
                 const tr = document.createElement('tr');
                 tr.dataset.id = c.id;
-                tr.innerHTML = `<td class="car-name">${c.nombre}</td><td class="car-factor">${c.factor !== null ? c.factor : '-'}</td>
-                    <td><button class="edit-car-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
-                    <button class="del-car-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tr.innerHTML = `<td class="feature-name">${c.name}</td><td class="feature-factor">${c.factor !== null ? c.factor : '-'}</td>
+                    <td><button class="edit-feature-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
+                    <button class="del-feature-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
                 tbody.appendChild(tr);
             });
-            document.querySelectorAll('.edit-car-btn').forEach(btn => {
+            document.querySelectorAll('.edit-feature-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tr = btn.closest('tr');
                     const id = parseInt(tr.dataset.id);
-                    const nameTd = tr.querySelector('.car-name');
-                    const factorTd = tr.querySelector('.car-factor');
+                    const nameTd = tr.querySelector('.feature-name');
+                    const factorTd = tr.querySelector('.feature-factor');
                     if (btn.textContent === '✏️') {
                         const curName = nameTd.textContent;
                         const curFactor = factorTd.textContent === '-' ? '' : factorTd.textContent;
-                        nameTd.innerHTML = `<input type="text" class="car-edit-name" value="${curName}" style="width:90%">`;
-                        factorTd.innerHTML = `<input type="number" class="car-edit-factor" value="${curFactor}" step="0.01" style="width:70px">`;
+                        nameTd.innerHTML = `<input type="text" class="feature-edit-name" value="${curName}" style="width:90%">`;
+                        factorTd.innerHTML = `<input type="number" class="feature-edit-factor" value="${curFactor}" step="0.01" style="width:70px">`;
                         btn.textContent = '💾';
                     } else {
-                        const newName = nameTd.querySelector('.car-edit-name').value.trim();
-                        const newFactor = factorTd.querySelector('.car-edit-factor').value.trim();
-                        if (!newName) { alert('El nombre es obligatorio.'); return; }
-                        db.run("UPDATE caracteristicas SET nombre = ?, factor = ? WHERE id = ?;",
+                        const newName = nameTd.querySelector('.feature-edit-name').value.trim();
+                        const newFactor = factorTd.querySelector('.feature-edit-factor').value.trim();
+                        if (!newName) { alert('Name is required.'); return; }
+                        db.run("UPDATE features SET name = ?, factor = ? WHERE id = ?;",
                             [newName, newFactor ? parseFloat(newFactor) : null, id]);
-                        cargarCaracteristicas();
-                        actualizarTabla();
+                        loadFeatures();
+                        updateTable();
                     }
                 });
             });
-            document.querySelectorAll('.del-car-btn').forEach(btn => {
+            document.querySelectorAll('.del-feature-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (!confirm('¿Eliminar esta característica?')) return;
+                    if (!confirm('Delete this feature?')) return;
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    db.run("DELETE FROM entidad_caracteristicas WHERE caracteristica_id = ?;", [id]);
-                    db.run("DELETE FROM caracteristicas WHERE id = ?;", [id]);
-                    cargarCaracteristicas();
-                    actualizarTabla();
+                    db.run("DELETE FROM entity_features WHERE feature_id = ?;", [id]);
+                    db.run("DELETE FROM features WHERE id = ?;", [id]);
+                    loadFeatures();
+                    updateTable();
                 });
             });
         }
 
-        function renderizarInputsCaracteristicas(selectedValues = {}) {
-            const container = document.getElementById('carInputsContainer');
+        function renderFeatureInputs(selectedValues = {}) {
+            const container = document.getElementById('featureInputsContainer');
             container.innerHTML = '';
-            if (listaCaracteristicas.length === 0) {
-                container.innerHTML = '<em>No hay características definidas.</em>';
+            if (featuresList.length === 0) {
+                container.innerHTML = '<em>No features defined.</em>';
                 return;
             }
-            const grados = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
+            const grades = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
             let html = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
-            listaCaracteristicas.forEach(c => {
+            featuresList.forEach(c => {
                 const val = selectedValues[c.id] || 'D';
-                html += `<label class="car-item">${c.nombre}:
-                    <select class="car-select" data-car-id="${c.id}">
-                        ${grados.map(g => `<option value="${g}" ${g === val ? 'selected' : ''}>${g}</option>`).join('')}
+                html += `<label class="feature-item">${c.name}:
+                    <select class="feature-select" data-feature-id="${c.id}">
+                        ${grades.map(g => `<option value="${g}" ${g === val ? 'selected' : ''}>${g}</option>`).join('')}
                     </select>
                 </label>`;
             });
@@ -513,362 +508,361 @@
             container.innerHTML = html;
         }
 
-        // Modal de características
-        document.getElementById('gestionCarBtn').addEventListener('click', () => {
-            document.getElementById('modalCaracteristicas').style.display = 'flex';
+        // Features Modal
+        document.getElementById('manageFeaturesBtn').addEventListener('click', () => {
+            document.getElementById('featuresModal').style.display = 'flex';
         });
-        document.getElementById('closeCarBtn').addEventListener('click', () => {
-            document.getElementById('modalCaracteristicas').style.display = 'none';
-            cargarCaracteristicas();
-            actualizarTabla();
+        document.getElementById('closeFeaturesBtn').addEventListener('click', () => {
+            document.getElementById('featuresModal').style.display = 'none';
+            loadFeatures();
+            updateTable();
         });
-        document.getElementById('modalCaracteristicas').addEventListener('click', (e) => {
+        document.getElementById('featuresModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) {
-                document.getElementById('modalCaracteristicas').style.display = 'none';
-                cargarCaracteristicas();
-                actualizarTabla();
+                document.getElementById('featuresModal').style.display = 'none';
+                loadFeatures();
+                updateTable();
             }
         });
-        document.getElementById('addCarBtn').addEventListener('click', () => {
-            const nombre = document.getElementById('newCarNombre').value.trim();
-            const factor = document.getElementById('newCarFactor').value.trim();
-            if (!nombre) { alert('El nombre es obligatorio.'); return; }
+        document.getElementById('addFeatureBtn').addEventListener('click', () => {
+            const name = document.getElementById('newFeatureFieldName').value.trim();
+            const factor = document.getElementById('newFeatureFactor').value.trim();
+            if (!name) { alert('Name is required.'); return; }
             try {
-                db.run("INSERT INTO caracteristicas (nombre, factor) VALUES (?, ?);", [nombre, factor ? parseFloat(factor) : null]);
-                document.getElementById('newCarNombre').value = '';
-                document.getElementById('newCarFactor').value = '';
-                cargarCaracteristicas();
+                db.run("INSERT INTO features (name, factor) VALUES (?, ?);", [name, factor ? parseFloat(factor) : null]);
+                document.getElementById('newFeatureFieldName').value = '';
+                document.getElementById('newFeatureFactor').value = '';
+                loadFeatures();
             } catch (e) {
                 alert('Error: ' + e.message);
             }
         });
 
-        function obtenerValoresCaracteristicas() {
-            const selects = document.querySelectorAll('#carInputsContainer .car-select');
-            const valores = {};
+        function getFeatureValues() {
+            const selects = document.querySelectorAll('#featureInputsContainer .feature-select');
+            const values = {};
             selects.forEach(sel => {
-                valores[parseInt(sel.dataset.carId)] = sel.value;
+                values[parseInt(sel.dataset.featureId)] = sel.value;
             });
-            return valores;
+            return values;
         }
 
-        function guardarCaracteristicasEntidad(entidadId, valores) {
-            for (const [carId, valor] of Object.entries(valores)) {
-                db.run(`INSERT OR REPLACE INTO entidad_caracteristicas (entidad_id, caracteristica_id, valor) VALUES (?, ?, ?);`,
-                    [entidadId, parseInt(carId), valor]);
+        function saveEntityFeatures(entityId, values) {
+            for (const [featureId, value] of Object.entries(values)) {
+                db.run(`INSERT OR REPLACE INTO entity_features (entity_id, feature_id, value) VALUES (?, ?, ?);`,
+                    [entityId, parseInt(featureId), value]);
             }
         }
 
-        // CRUD Etiquetas
-        let listaEtiquetas = [];
+        // CRUD Tags
+        let tagsList = [];
 
-        function cargarEtiquetas() {
-            const res = db.exec("SELECT id, nombre, factor, descripcion FROM etiquetas ORDER BY id;");
-            listaEtiquetas = [];
+        function loadTags() {
+            const res = db.exec("SELECT id, name, factor, description FROM tags ORDER BY id;");
+            tagsList = [];
             if (res.length > 0) {
-                listaEtiquetas = res[0].values.map(f => ({ id: f[0], nombre: f[1], factor: f[2], descripcion: f[3] }));
+                tagsList = res[0].values.map(f => ({ id: f[0], name: f[1], factor: f[2], description: f[3] }));
             }
-            renderizarEtiquetas();
-            renderizarCheckboxesEtiquetas();
-            if (document.getElementById('filterContainer')) renderizarFiltros();
+            renderTags();
+            renderTagCheckboxes();
+            if (document.getElementById('filterContainer')) renderFilters();
         }
 
-        function renderizarEtiquetas() {
-            const tbody = document.getElementById('etqTableBody');
+        function renderTags() {
+            const tbody = document.getElementById('tagsTableBody');
             tbody.innerHTML = '';
-            listaEtiquetas.forEach(e => {
+            tagsList.forEach(e => {
                 const tr = document.createElement('tr');
                 tr.dataset.id = e.id;
-                tr.innerHTML = `<td class="etq-name">${e.nombre}</td><td class="etq-factor">${e.factor !== null ? e.factor : '-'}</td>
-                    <td class="etq-desc">${e.descripcion || ''}</td>
-                    <td><button class="edit-etq-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
-                    <button class="del-etq-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tr.innerHTML = `<td class="tag-name">${e.name}</td><td class="tag-factor">${e.factor !== null ? e.factor : '-'}</td>
+                    <td class="tag-desc">${e.description || ''}</td>
+                    <td><button class="edit-tag-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
+                    <button class="del-tag-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
                 tbody.appendChild(tr);
             });
-            document.querySelectorAll('.edit-etq-btn').forEach(btn => {
+            document.querySelectorAll('.edit-tag-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tr = btn.closest('tr');
                     const id = parseInt(tr.dataset.id);
-                    const nameTd = tr.querySelector('.etq-name');
-                    const factorTd = tr.querySelector('.etq-factor');
-                    const descTd = tr.querySelector('.etq-desc');
+                    const nameTd = tr.querySelector('.tag-name');
+                    const factorTd = tr.querySelector('.tag-factor');
+                    const descTd = tr.querySelector('.tag-desc');
                     if (btn.textContent === '✏️') {
-                        nameTd.innerHTML = `<input type="text" class="etq-edit-name" value="${nameTd.textContent}" style="width:90%">`;
-                        factorTd.innerHTML = `<input type="number" class="etq-edit-factor" value="${factorTd.textContent === '-' ? '' : factorTd.textContent}" step="0.01" style="width:70px">`;
-                        descTd.innerHTML = `<input type="text" class="etq-edit-desc" value="${descTd.textContent}" style="width:90%">`;
+                        nameTd.innerHTML = `<input type="text" class="tag-edit-name" value="${nameTd.textContent}" style="width:90%">`;
+                        factorTd.innerHTML = `<input type="number" class="tag-edit-factor" value="${factorTd.textContent === '-' ? '' : factorTd.textContent}" step="0.01" style="width:70px">`;
+                        descTd.innerHTML = `<input type="text" class="tag-edit-desc" value="${descTd.textContent}" style="width:90%">`;
                         btn.textContent = '💾';
                     } else {
-                        const newName = nameTd.querySelector('.etq-edit-name').value.trim().toUpperCase();
-                        const newFactor = factorTd.querySelector('.etq-edit-factor').value.trim();
-                        const newDesc = descTd.querySelector('.etq-edit-desc').value.trim();
-                        if (!newName) { alert('El nombre es obligatorio.'); return; }
+                        const newName = nameTd.querySelector('.tag-edit-name').value.trim().toUpperCase();
+                        const newFactor = factorTd.querySelector('.tag-edit-factor').value.trim();
+                        const newDesc = descTd.querySelector('.tag-edit-desc').value.trim();
+                        if (!newName) { alert('Name is required.'); return; }
                         if (!/^[A-Z0-9_]+$/.test(newName)) {
-                            alert('Solo se permiten mayúsculas, números y guión bajo.');
+                            alert('Only uppercase letters, numbers and underscores are allowed.');
                             return;
                         }
-                        db.run("UPDATE etiquetas SET nombre = ?, factor = ?, descripcion = ? WHERE id = ?;",
+                        db.run("UPDATE tags SET name = ?, factor = ?, description = ? WHERE id = ?;",
                             [newName, newFactor ? parseFloat(newFactor) : null, newDesc || null, id]);
-                        cargarEtiquetas();
-                        actualizarTabla();
+                        loadTags();
+                        updateTable();
                     }
                 });
             });
-            document.querySelectorAll('.del-etq-btn').forEach(btn => {
+            document.querySelectorAll('.del-tag-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (!confirm('¿Eliminar esta etiqueta?')) return;
+                    if (!confirm('Delete this tag?')) return;
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    db.run("DELETE FROM entidad_etiquetas WHERE etiqueta_id = ?;", [id]);
-                    db.run("DELETE FROM etiquetas WHERE id = ?;", [id]);
-                    cargarEtiquetas();
-                    actualizarTabla();
+                    db.run("DELETE FROM entity_tags WHERE tag_id = ?;", [id]);
+                    db.run("DELETE FROM tags WHERE id = ?;", [id]);
+                    loadTags();
+                    updateTable();
                 });
             });
         }
 
-        function renderizarCheckboxesEtiquetas(selectedIds = []) {
-            const container = document.getElementById('etqInputsContainer');
+        function renderTagCheckboxes(selectedIds = []) {
+            const container = document.getElementById('tagInputsContainer');
             container.innerHTML = '';
-            if (listaEtiquetas.length === 0) {
-                container.innerHTML = '<em>No hay etiquetas definidas.</em>';
+            if (tagsList.length === 0) {
+                container.innerHTML = '<em>No tags defined.</em>';
                 return;
             }
             let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
-            listaEtiquetas.forEach(e => {
+            tagsList.forEach(e => {
                 const checked = selectedIds.includes(e.id) ? 'checked' : '';
                 html += `<label class="tag-check">
-                    <input type="checkbox" class="etq-checkbox" data-etq-id="${e.id}" ${checked}>
-                    ${e.nombre}
+                    <input type="checkbox" class="tag-checkbox" data-tag-id="${e.id}" ${checked}>
+                    ${e.name}
                 </label>`;
             });
             html += '</div>';
             container.innerHTML = html;
         }
 
-        // Modal de etiquetas
-        document.getElementById('gestionEtqBtn').addEventListener('click', () => {
-            document.getElementById('modalEtiquetas').style.display = 'flex';
+        // Tags Modal
+        document.getElementById('manageTagsBtn').addEventListener('click', () => {
+            document.getElementById('tagsModal').style.display = 'flex';
         });
-        document.getElementById('closeEtqBtn').addEventListener('click', () => {
-            document.getElementById('modalEtiquetas').style.display = 'none';
-            cargarEtiquetas();
-            actualizarTabla();
+        document.getElementById('closeTagsBtn').addEventListener('click', () => {
+            document.getElementById('tagsModal').style.display = 'none';
+            loadTags();
+            updateTable();
         });
-        document.getElementById('modalEtiquetas').addEventListener('click', (e) => {
+        document.getElementById('tagsModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) {
-                document.getElementById('modalEtiquetas').style.display = 'none';
-                cargarEtiquetas();
-                actualizarTabla();
+                document.getElementById('tagsModal').style.display = 'none';
+                loadTags();
+                updateTable();
             }
         });
-        document.getElementById('addEtqBtn').addEventListener('click', () => {
-            const nombre = document.getElementById('newEtqNombre').value.trim().toUpperCase();
-            const factor = document.getElementById('newEtqFactor').value.trim();
-            const descripcion = document.getElementById('newEtqDesc').value.trim();
-            if (!nombre) { alert('El nombre es obligatorio.'); return; }
-            if (!/^[A-Z0-9_]+$/.test(nombre)) {
-                alert('Solo se permiten mayúsculas, números y guión bajo.');
+        document.getElementById('addTagBtn').addEventListener('click', () => {
+            const name = document.getElementById('newTagFieldName').value.trim().toUpperCase();
+            const factor = document.getElementById('newTagFactor').value.trim();
+            const description = document.getElementById('newTagDesc').value.trim();
+            if (!name) { alert('Name is required.'); return; }
+            if (!/^[A-Z0-9_]+$/.test(name)) {
+                alert('Only uppercase letters, numbers and underscores are allowed.');
                 return;
             }
             try {
-                db.run("INSERT INTO etiquetas (nombre, factor, descripcion) VALUES (?, ?, ?);", [nombre, factor ? parseFloat(factor) : null, descripcion || null]);
-                document.getElementById('newEtqNombre').value = '';
-                document.getElementById('newEtqFactor').value = '';
-                document.getElementById('newEtqDesc').value = '';
-                cargarEtiquetas();
+                db.run("INSERT INTO tags (name, factor, description) VALUES (?, ?, ?);", [name, factor ? parseFloat(factor) : null, description || null]);
+                document.getElementById('newTagFieldName').value = '';
+                document.getElementById('newTagFactor').value = '';
+                document.getElementById('newTagDesc').value = '';
+                loadTags();
             } catch (e) {
                 alert('Error: ' + e.message);
             }
         });
 
-        function obtenerIdsEtiquetasSeleccionadas() {
-            const checks = document.querySelectorAll('#etqInputsContainer .etq-checkbox:checked');
-            return Array.from(checks).map(c => parseInt(c.dataset.etqId));
+        function getSelectedTagIds() {
+            const checks = document.querySelectorAll('#tagInputsContainer .tag-checkbox:checked');
+            return Array.from(checks).map(c => parseInt(c.dataset.tagId));
         }
 
-        function guardarEtiquetasEntidad(entidadId, etiquetaIds) {
-            db.run("DELETE FROM entidad_etiquetas WHERE entidad_id = ?;", [entidadId]);
-            etiquetaIds.forEach(eid => {
-                db.run("INSERT INTO entidad_etiquetas (entidad_id, etiqueta_id) VALUES (?, ?);", [entidadId, eid]);
+        function saveEntityTags(entityId, tagIds) {
+            db.run("DELETE FROM entity_tags WHERE entity_id = ?;", [entityId]);
+            tagIds.forEach(eid => {
+                db.run("INSERT INTO entity_tags (entity_id, tag_id) VALUES (?, ?);", [entityId, eid]);
             });
         }
 
-        // CRUD Campos Personalizados
-        let listaCampoPersonalizado = [];
-        let editingCampoOpciones = null;
+        // CRUD Custom Fields
+        let customFieldsList = [];
+        let editingFieldOptionsId = null;
 
-        function cargarCamposPersonalizados() {
-            const res = db.exec("SELECT id, nombre, descripcion, tipo FROM campos_personalizados ORDER BY id;");
-            listaCampoPersonalizado = [];
+        function loadCustomFields() {
+            const res = db.exec("SELECT id, name, description, type FROM custom_fields ORDER BY id;");
+            customFieldsList = [];
             if (res.length > 0) {
-                listaCampoPersonalizado = res[0].values.map(r => ({ id: r[0], nombre: r[1], descripcion: r[2], tipo: r[3] }));
+                customFieldsList = res[0].values.map(r => ({ id: r[0], name: r[1], description: r[2], type: r[3] }));
             }
-            renderizarCamposPersonalizados();
-            renderizarInputsCampos();
-            if (document.getElementById('filterContainer')) renderizarFiltros();
+            renderCustomFields();
+            renderFieldInputs();
+            if (document.getElementById('filterContainer')) renderFilters();
         }
 
-        function obtenerOpcionesCampo(campoId) {
-            const res = db.exec("SELECT id, valor, factor FROM opciones_campo WHERE campo_id = ? ORDER BY id;", [campoId]);
+        function getFieldOptions(fieldId) {
+            const res = db.exec("SELECT id, value, factor FROM field_options WHERE field_id = ? ORDER BY id;", [fieldId]);
             if (res.length === 0) return [];
-            return res[0].values.map(r => ({ id: r[0], valor: r[1], factor: r[2] }));
+            return res[0].values.map(r => ({ id: r[0], value: r[1], factor: r[2] }));
         }
 
-        function renderizarCamposPersonalizados() {
-            const tbody = document.getElementById('camposTableBody');
+        function renderCustomFields() {
+            const tbody = document.getElementById('fieldsTableBody');
             tbody.innerHTML = '';
-            listaCampoPersonalizado.forEach(c => {
-                const isLista = c.tipo === 'lista_unico' || c.tipo === 'lista_multiple';
-                let tipoLabel = { texto: 'Texto', lista_unico: 'Lista (único)', lista_multiple: 'Lista (múltiple)' }[c.tipo] || c.tipo;
+            customFieldsList.forEach(c => {
+                const isList = c.type === 'single_list' || c.type === 'multi_list';
+                let typeLabel = { text: 'Text', single_list: 'List (single)', multi_list: 'List (multiple)' }[c.type] || c.type;
                 const tr = document.createElement('tr');
                 tr.dataset.id = c.id;
-                tr.innerHTML = `<td class="camp-nombre">${c.nombre}</td><td class="camp-desc">${c.descripcion || ''}</td><td class="camp-tipo">${tipoLabel}</td>
-                    <td>${isLista ? `<button class="opc-camp-btn" style="padding:2px 6px;font-size:0.85em">📋 Opciones</button>` : '—'}</td>
-                    <td><button class="edit-camp-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
-                    <button class="del-camp-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
+                tr.innerHTML = `<td class="field-name">${c.name}</td><td class="field-desc">${c.description || ''}</td><td class="field-type">${typeLabel}</td>
+                    <td>${isList ? `<button class="opt-field-btn" style="padding:2px 6px;font-size:0.85em">📋 Options</button>` : '—'}</td>
+                    <td><button class="edit-field-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
+                    <button class="del-field-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
                 tbody.appendChild(tr);
             });
-            document.querySelectorAll('.edit-camp-btn').forEach(btn => {
+            document.querySelectorAll('.edit-field-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tr = btn.closest('tr');
                     const id = parseInt(tr.dataset.id);
-                    const nameTd = tr.querySelector('.camp-nombre');
-                    const descTd = tr.querySelector('.camp-desc');
+                    const nameTd = tr.querySelector('.field-name');
+                    const descTd = tr.querySelector('.field-desc');
                     if (btn.textContent === '✏️') {
-                        nameTd.innerHTML = `<input type="text" class="camp-edit-nombre" value="${nameTd.textContent}" style="width:90%">`;
-                        descTd.innerHTML = `<input type="text" class="camp-edit-desc" value="${descTd.textContent}" style="width:90%">`;
+                        nameTd.innerHTML = `<input type="text" class="field-edit-name" value="${nameTd.textContent}" style="width:90%">`;
+                        descTd.innerHTML = `<input type="text" class="field-edit-desc" value="${descTd.textContent}" style="width:90%">`;
                         btn.textContent = '💾';
                     } else {
-                        const newName = nameTd.querySelector('.camp-edit-nombre').value.trim();
-                        const newDesc = descTd.querySelector('.camp-edit-desc').value.trim();
-                        if (!newName) { alert('El nombre es obligatorio.'); return; }
-                        db.run("UPDATE campos_personalizados SET nombre = ?, descripcion = ? WHERE id = ?;",
+                        const newName = nameTd.querySelector('.field-edit-name').value.trim();
+                        const newDesc = descTd.querySelector('.field-edit-desc').value.trim();
+                        if (!newName) { alert('Name is required.'); return; }
+                        db.run("UPDATE custom_fields SET name = ?, description = ? WHERE id = ?;",
                             [newName, newDesc || null, id]);
-                        cargarCamposPersonalizados();
-                        actualizarTabla();
+                        loadCustomFields();
+                        updateTable();
                     }
                 });
             });
-            document.querySelectorAll('.del-camp-btn').forEach(btn => {
+            document.querySelectorAll('.del-field-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (!confirm('¿Eliminar este campo? También se eliminarán sus opciones y valores asociados.')) return;
+                    if (!confirm('Delete this field? Connected choices and values will also be deleted.')) return;
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    db.run("DELETE FROM entidad_campo_valor WHERE campo_id = ?;", [id]);
-                    db.run("DELETE FROM opciones_campo WHERE campo_id = ?;", [id]);
-                    db.run("DELETE FROM campos_personalizados WHERE id = ?;", [id]);
-                    cargarCamposPersonalizados();
-                    actualizarTabla();
+                    db.run("DELETE FROM entity_field_value WHERE field_id = ?;", [id]);
+                    db.run("DELETE FROM field_options WHERE field_id = ?;", [id]);
+                    db.run("DELETE FROM custom_fields WHERE id = ?;", [id]);
+                    loadCustomFields();
+                    updateTable();
                 });
             });
-            document.querySelectorAll('.opc-camp-btn').forEach(btn => {
+            document.querySelectorAll('.opt-field-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    mostrarOpcionesCampo(id);
+                    showFieldOptions(id);
                 });
             });
         }
 
-        function mostrarOpcionesCampo(campoId) {
-            editingCampoOpciones = campoId;
-            const container = document.getElementById('opcionesCampoContainer');
-            const content = document.getElementById('opcionesCampoContent');
+        function showFieldOptions(fieldId) {
+            editingFieldOptionsId = fieldId;
+            const container = document.getElementById('fieldOptionsContainer');
+            const content = document.getElementById('fieldOptionsContent');
             container.style.display = 'block';
-            const opts = obtenerOpcionesCampo(campoId);
-            let html = '<table style="width:100%;margin-bottom:4px"><thead><tr><th>Valor</th><th>Factor</th><th></th></tr></thead><tbody>';
+            const opts = getFieldOptions(fieldId);
+            let html = '<table style="width:100%;margin-bottom:4px"><thead><tr><th>Value</th><th>Factor</th><th></th></tr></thead><tbody>';
             opts.forEach(o => {
-                html += `<tr data-id="${o.id}"><td class="opc-val">${o.valor}</td><td class="opc-factor">${o.factor !== null ? o.factor : '-'}</td>
-                    <td><button class="edit-opc-btn" style="padding:1px 5px;font-size:0.8em">✏️</button>
-                    <button class="del-opc-btn" style="padding:1px 5px;font-size:0.8em;background-color:#e74c3c;">✖</button></td></tr>`;
+                html += `<tr data-id="${o.id}"><td class="opt-val">${o.value}</td><td class="opt-factor">${o.factor !== null ? o.factor : '-'}</td>
+                    <td><button class="edit-opt-btn" style="padding:1px 5px;font-size:0.8em">✏️</button>
+                    <button class="del-opt-btn" style="padding:1px 5px;font-size:0.8em;background-color:#e74c3c;">✖</button></td></tr>`;
             });
             html += '</tbody></table>';
             html += `<div style="display:flex;gap:4px;flex-wrap:wrap">
-                <input type="text" id="newOpcValor" placeholder="Valor" style="flex:2">
-                <input type="number" id="newOpcFactor" placeholder="Factor" step="0.01" style="flex:1">
-                <button id="addOpcBtn" style="padding:4px 10px;font-size:0.85em">➕ Añadir Opción</button>
+                <input type="text" id="newOptValue" placeholder="Value" style="flex:2">
+                <input type="number" id="newOptFactor" placeholder="Factor" step="0.01" style="flex:1">
+                <button id="addOptBtn" style="padding:4px 10px;font-size:0.85em">➕ Add Option</button>
             </div>`;
             content.innerHTML = html;
 
-            document.getElementById('addOpcBtn').addEventListener('click', () => {
-                const valor = document.getElementById('newOpcValor').value.trim();
-                const factor = document.getElementById('newOpcFactor').value.trim();
-                if (!valor) { alert('El valor es obligatorio.'); return; }
-                db.run("INSERT INTO opciones_campo (campo_id, valor, factor) VALUES (?, ?, ?);",
-                    [editingCampoOpciones, valor, factor ? parseFloat(factor) : null]);
-                document.getElementById('newOpcValor').value = '';
-                document.getElementById('newOpcFactor').value = '';
-                mostrarOpcionesCampo(editingCampoOpciones);
-                cargarCamposPersonalizados();
+            document.getElementById('addOptBtn').addEventListener('click', () => {
+                const value = document.getElementById('newOptValue').value.trim();
+                const factor = document.getElementById('newOptFactor').value.trim();
+                if (!value) { alert('Value is required.'); return; }
+                db.run("INSERT INTO field_options (field_id, value, factor) VALUES (?, ?, ?);",
+                    [editingFieldOptionsId, value, factor ? parseFloat(factor) : null]);
+                document.getElementById('newOptValue').value = '';
+                document.getElementById('newOptFactor').value = '';
+                showFieldOptions(editingFieldOptionsId);
+                loadCustomFields();
             });
 
-            document.querySelectorAll('.edit-opc-btn').forEach(btn => {
+            document.querySelectorAll('.edit-opt-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tr = btn.closest('tr');
                     const id = parseInt(tr.dataset.id);
-                    const valTd = tr.querySelector('.opc-val');
-                    const factorTd = tr.querySelector('.opc-factor');
+                    const valTd = tr.querySelector('.opt-val');
+                    const factorTd = tr.querySelector('.opt-factor');
                     if (btn.textContent === '✏️') {
-                        valTd.innerHTML = `<input type="text" class="opc-edit-val" value="${valTd.textContent}" style="width:90%">`;
-                        factorTd.innerHTML = `<input type="number" class="opc-edit-factor" value="${factorTd.textContent === '-' ? '' : factorTd.textContent}" step="0.01" style="width:70px">`;
+                        valTd.innerHTML = `<input type="text" class="opt-edit-val" value="${valTd.textContent}" style="width:90%">`;
+                        factorTd.innerHTML = `<input type="number" class="opt-edit-factor" value="${factorTd.textContent === '-' ? '' : factorTd.textContent}" step="0.01" style="width:70px">`;
                         btn.textContent = '💾';
                     } else {
-                        const newVal = valTd.querySelector('.opc-edit-val').value.trim();
-                        const newFactor = factorTd.querySelector('.opc-edit-factor').value.trim();
-                        if (!newVal) { alert('El valor es obligatorio.'); return; }
-                        db.run("UPDATE opciones_campo SET valor = ?, factor = ? WHERE id = ?;",
+                        const newVal = valTd.querySelector('.opt-edit-val').value.trim();
+                        const newFactor = factorTd.querySelector('.opt-edit-factor').value.trim();
+                        if (!newVal) { alert('Value is required.'); return; }
+                        db.run("UPDATE field_options SET value = ?, factor = ? WHERE id = ?;",
                             [newVal, newFactor ? parseFloat(newFactor) : null, id]);
-                        mostrarOpcionesCampo(editingCampoOpciones);
-                        cargarCamposPersonalizados();
+                        showFieldOptions(editingFieldOptionsId);
+                        loadCustomFields();
                     }
                 });
             });
 
-            document.querySelectorAll('.del-opc-btn').forEach(btn => {
+            document.querySelectorAll('.del-opt-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    db.run("DELETE FROM opciones_campo WHERE id = ?;", [id]);
-                    mostrarOpcionesCampo(editingCampoOpciones);
-                    cargarCamposPersonalizados();
+                    db.run("DELETE FROM field_options WHERE id = ?;", [id]);
+                    showFieldOptions(editingFieldOptionsId);
+                    loadCustomFields();
                 });
             });
         }
 
-        function renderizarInputsCampos(savedValues = {}) {
-            const container = document.getElementById('campInputsContainer');
+        function renderFieldInputs(savedValues = {}) {
+            const container = document.getElementById('fieldInputsContainer');
             container.innerHTML = '';
-            if (listaCampoPersonalizado.length === 0) return;
+            if (customFieldsList.length === 0) return;
             let html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
-            listaCampoPersonalizado.forEach(c => {
-                if (c.tipo === 'texto') {
+            customFieldsList.forEach(c => {
+                if (c.type === 'text') {
                     const val = savedValues[c.id] || '';
                     html += `<label style="display:flex;flex-direction:column;gap:2px;font-size:0.9em">
-                        ${c.nombre} <input type="text" class="camp-input-text" data-camp-id="${c.id}" value="${val}" style="padding:2px 6px">
+                        ${c.name} <input type="text" class="field-input-text" data-field-id="${c.id}" value="${val}" style="padding:2px 6px">
                     </label>`;
                 } else {
-                    const opts = obtenerOpcionesCampo(c.id);
-                    const isMulti = c.tipo === 'lista_multiple';
+                    const opts = getFieldOptions(c.id);
+                    const isMulti = c.type === 'multi_list';
                     const saved = savedValues[c.id] ? savedValues[c.id].split(',').filter(Boolean) : [];
                     html += `<fieldset style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;margin:0">
-                        <legend style="font-size:0.85em">${c.nombre} ${isMulti ? '(múltiple)' : ''}</legend>
+                        <legend style="font-size:0.85em">${c.name} ${isMulti ? '(multiple)' : ''}</legend>
                         <div style="display:flex;flex-wrap:wrap;gap:4px">`;
                     opts.forEach(o => {
                         const oid = String(o.id);
                         if (isMulti) {
                             const checked = saved.includes(oid) ? 'checked' : '';
                             html += `<label style="font-size:0.85em;white-space:nowrap">
-                                <input type="checkbox" class="camp-input-chk" data-camp-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.valor}
+                                <input type="checkbox" class="field-input-chk" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.value}
                             </label>`;
                         } else {
                             const selected = saved.includes(oid) ? 'selected' : '';
                             html += `<label style="font-size:0.85em;white-space:nowrap">
-                                <input type="radio" class="camp-input-radio" name="camp_radio_${c.id}" data-camp-id="${c.id}" data-opt-id="${o.id}" ${selected ? 'checked' : ''}> ${o.valor}
+                                <input type="radio" class="field-input-radio" name="field_radio_${c.id}" data-field-id="${c.id}" data-opt-id="${o.id}" ${selected ? 'checked' : ''}> ${o.value}
                             </label>`;
                         }
                     });
                     if (!isMulti && opts.length > 0) {
-                        // Ensure at least one radio is checked
                         const hasChecked = opts.some(o => saved.includes(String(o.id)));
                         if (!hasChecked) {
                             html += `<label style="font-size:0.85em;white-space:nowrap;color:#999">
-                                <input type="radio" class="camp-input-radio" name="camp_radio_${c.id}" data-camp-id="${c.id}" data-opt-id="" checked> (ninguno)
+                                <input type="radio" class="field-input-radio" name="field_radio_${c.id}" data-field-id="${c.id}" data-opt-id="" checked> (none)
                             </label>`;
                         }
                     }
@@ -879,69 +873,68 @@
             container.innerHTML = html;
         }
 
-        function obtenerValoresCamposPersonalizados() {
+        function getCustomFieldValues() {
             const vals = {};
-            document.querySelectorAll('.camp-input-text').forEach(inp => {
-                vals[parseInt(inp.dataset.campId)] = inp.value;
+            document.querySelectorAll('.field-input-text').forEach(inp => {
+                vals[parseInt(inp.dataset.fieldId)] = inp.value;
             });
-            document.querySelectorAll('.camp-input-radio:checked').forEach(inp => {
+            document.querySelectorAll('.field-input-radio:checked').forEach(inp => {
                 if (inp.dataset.optId) {
-                    vals[parseInt(inp.dataset.campId)] = inp.dataset.optId;
+                    vals[parseInt(inp.dataset.fieldId)] = inp.dataset.optId;
                 }
             });
-            document.querySelectorAll('.camp-input-chk').forEach(chk => {
-                const cid = parseInt(chk.dataset.campId);
+            document.querySelectorAll('.field-input-chk').forEach(chk => {
+                const cid = parseInt(chk.dataset.fieldId);
                 if (!vals[cid]) vals[cid] = [];
                 if (chk.checked) vals[cid].push(chk.dataset.optId);
             });
-            // Convert arrays to comma-separated strings
             for (const [k, v] of Object.entries(vals)) {
                 if (Array.isArray(v)) vals[k] = v.join(',');
             }
             return vals;
         }
 
-        function guardarValoresCampos(entidadId, valores) {
-            for (const [campId, valor] of Object.entries(valores)) {
-                db.run("INSERT OR REPLACE INTO entidad_campo_valor (entidad_id, campo_id, valor) VALUES (?, ?, ?);",
-                    [entidadId, parseInt(campId), valor]);
+        function saveFieldValues(entityId, values) {
+            for (const [fieldId, value] of Object.entries(values)) {
+                db.run("INSERT OR REPLACE INTO entity_field_value (entity_id, field_id, value) VALUES (?, ?, ?);",
+                    [entityId, parseInt(fieldId), value]);
             }
         }
 
-        // Modal de campos personalizados
-        document.getElementById('gestionCampBtn').addEventListener('click', () => {
-            document.getElementById('modalCampos').style.display = 'flex';
-            document.getElementById('opcionesCampoContainer').style.display = 'none';
-            editingCampoOpciones = null;
+        // Custom Fields Modal Buttons
+        document.getElementById('manageFieldsBtn').addEventListener('click', () => {
+            document.getElementById('fieldsModal').style.display = 'flex';
+            document.getElementById('fieldOptionsContainer').style.display = 'none';
+            editingFieldOptionsId = null;
         });
-        document.getElementById('closeCampBtn').addEventListener('click', () => {
-            document.getElementById('modalCampos').style.display = 'none';
-            cargarCamposPersonalizados();
-            actualizarTabla();
+        document.getElementById('closeFieldsBtn').addEventListener('click', () => {
+            document.getElementById('fieldsModal').style.display = 'none';
+            loadCustomFields();
+            updateTable();
         });
-        document.getElementById('modalCampos').addEventListener('click', (e) => {
+        document.getElementById('fieldsModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) {
-                document.getElementById('modalCampos').style.display = 'none';
-                cargarCamposPersonalizados();
-                actualizarTabla();
+                document.getElementById('fieldsModal').style.display = 'none';
+                loadCustomFields();
+                updateTable();
             }
         });
-        document.getElementById('addCampBtn').addEventListener('click', () => {
-            const nombre = document.getElementById('newCampNombre').value.trim();
-            const descripcion = document.getElementById('newCampDesc').value.trim();
-            const tipo = document.getElementById('newCampTipo').value;
-            if (!nombre) { alert('El nombre es obligatorio.'); return; }
+        document.getElementById('addFieldBtn').addEventListener('click', () => {
+            const name = document.getElementById('newFieldFieldName').value.trim();
+            const description = document.getElementById('newFieldDesc').value.trim();
+            const type = document.getElementById('newFieldType').value;
+            if (!name) { alert('Name is required.'); return; }
             try {
-                db.run("INSERT INTO campos_personalizados (nombre, descripcion, tipo) VALUES (?, ?, ?);", [nombre, descripcion || null, tipo]);
-                document.getElementById('newCampNombre').value = '';
-                document.getElementById('newCampDesc').value = '';
-                cargarCamposPersonalizados();
+                db.run("INSERT INTO custom_fields (name, description, type) VALUES (?, ?, ?);", [name, description || null, type]);
+                document.getElementById('newFieldFieldName').value = '';
+                document.getElementById('newFieldDesc').value = '';
+                loadCustomFields();
             } catch (e) {
                 alert('Error: ' + e.message);
             }
         });
 
-        // Drag & Drop de imágenes para crear entidades
+        // Drag & Drop images to create entities
         const dropZone = document.getElementById('dropZoneCard');
 
         dropZone.addEventListener('dragover', (e) => {
@@ -959,91 +952,91 @@
 
             const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
             if (files.length === 0) {
-                document.getElementById('dropStatus').textContent = 'Solo se aceptan imágenes.';
+                document.getElementById('dropStatus').textContent = 'Only images are accepted.';
                 document.getElementById('dropStatus').style.color = '#e74c3c';
                 return;
             }
 
             if (!imagesDirHandle) {
-                document.getElementById('dropStatus').textContent = '❌ Primero selecciona una carpeta de imágenes (sección 2).';
+                document.getElementById('dropStatus').textContent = '❌ Please select an images folder in section 2 first.';
                 document.getElementById('dropStatus').style.color = '#e74c3c';
                 return;
             }
 
-            document.getElementById('dropStatus').textContent = `Procesando ${files.length} imagen(es)...`;
+            document.getElementById('dropStatus').textContent = `Processing ${files.length} image(s)...`;
             document.getElementById('dropStatus').style.color = '#2ecc71';
 
-            let creados = 0;
-            let errores = 0;
+            let created = 0;
+            let errors = 0;
 
             for (const file of files) {
                 try {
-                    const nombre = file.name.replace(/\.[^/.]+$/, '').trim();
-                    if (!nombre) { errores++; continue; }
+                    const name = file.name.replace(/\.[^/.]+$/, '').trim();
+                    if (!name) { errors++; continue; }
 
-                    db.run("INSERT INTO entidades (nombre) VALUES (?);", [nombre]);
+                    db.run("INSERT INTO entities (name) VALUES (?);", [name]);
                     const newId = db.exec("SELECT last_insert_rowid();");
-                    const entidadId = newId[0].values[0][0];
+                    const entityId = newId[0].values[0][0];
 
-                    // Guardar características con valores por defecto
-                    const vals = obtenerValoresCaracteristicas();
-                    guardarCaracteristicasEntidad(entidadId, vals);
+                    // Save features with default values
+                    const vals = getFeatureValues();
+                    saveEntityFeatures(entityId, vals);
 
-                    // Guardar etiquetas seleccionadas
-                    const etqIds = obtenerIdsEtiquetasSeleccionadas();
-                    guardarEtiquetasEntidad(entidadId, etqIds);
+                    // Save selected tags
+                    const tagIds = getSelectedTagIds();
+                    saveEntityTags(entityId, tagIds);
 
-                    // Guardar campos personalizados
-                    const campVals = obtenerValoresCamposPersonalizados();
-                    guardarValoresCampos(entidadId, campVals);
+                    // Save custom fields
+                    const fieldVals = getCustomFieldValues();
+                    saveFieldValues(entityId, fieldVals);
 
-                    // Subir imagen
+                    // Upload image
                     const ext = file.name.split('.').pop() || 'png';
                     const randomId = Math.random().toString(36).substring(2, 10);
-                    const nombreArchivo = `${nombre}_${randomId}.${ext}`;
+                    const filename = `${name}_${randomId}.${ext}`;
                     const blob = new Blob([await file.arrayBuffer()], { type: file.type });
-                    await guardarImagenFS(blob, nombreArchivo);
-                    db.run("UPDATE entidades SET imagen = ? WHERE id = ?;", [nombreArchivo, entidadId]);
+                    await saveImageFS(blob, filename);
+                    db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, entityId]);
 
-                    creados++;
+                    created++;
                 } catch (err) {
-                    errores++;
-                    console.error('Error al procesar', file.name, err);
+                    errors++;
+                    console.error('Error processing file', file.name, err);
                 }
             }
 
-            actualizarTabla();
-            const msg = `✅ ${creados} entidad(es) creada(s)` + (errores > 0 ? `, ${errores} error(es)` : '');
+            updateTable();
+            const msg = `✅ ${created} entity(ies) created` + (errors > 0 ? `, ${errors} error(s)` : '');
             document.getElementById('dropStatus').textContent = msg;
-            document.getElementById('dropStatus').style.color = errores > 0 ? '#e67e22' : '#2ecc71';
+            document.getElementById('dropStatus').style.color = errors > 0 ? '#e67e22' : '#2ecc71';
             setTimeout(() => {
-                document.getElementById('dropStatus').textContent = 'Suelta las imágenes aquí';
+                document.getElementById('dropStatus').textContent = 'Drop images here';
                 document.getElementById('dropStatus').style.color = '#999';
             }, 4000);
         });
 
-        const COLORES_GRADO = {
+        const GRADE_COLORS = {
             S: '#e74c3c', A: '#e67e22', B: '#d4a017', C: '#2ecc71',
             D: '#00bcd4', E: '#9b59b6', F: '#e91e90'
         };
 
-        // ─── Filtros ──────────────────────────────────────────────
-        function renderizarFiltros() {
+        // ─── Filters Rendering and Processing ─────────────────────
+        function renderFilters() {
             const container = document.getElementById('filterContainer');
             let html = '';
 
-            // Filtro nombre
-            const fn = document.getElementById('filterNombre') ? document.getElementById('filterNombre').value : '';
-            html += `<div class="filter-group"><h4>Nombre</h4>
-                <input type="text" id="filterNombre" placeholder="Buscar nombre..." value="${fn}" style="width:90%"></div>`;
+            // Name filter
+            const fn = document.getElementById('filterName') ? document.getElementById('filterName').value : '';
+            html += `<div class="filter-group"><h4>Name</h4>
+                <input type="text" id="filterName" placeholder="Search name..." value="${fn}" style="width:90%"></div>`;
 
-            // Filtros características
-            if (listaCaracteristicas.length > 0) {
-                html += '<div class="filter-group"><h4>Características</h4>';
-                listaCaracteristicas.forEach(c => {
-                    const selId = `filter_car_${c.id}`;
+            // Features filters
+            if (featuresList.length > 0) {
+                html += '<div class="filter-group"><h4>Features</h4>';
+                featuresList.forEach(c => {
+                    const selId = `filter_feature_${c.id}`;
                     const cur = document.getElementById(selId) ? document.getElementById(selId).value : '';
-                    html += `<label>${c.nombre}:
+                    html += `<label>${c.name}:
                         <select id="${selId}" style="margin:2px 0">
                             <option value="">—</option>
                             <option value="S" ${cur === 'S' ? 'selected' : ''}>S</option>
@@ -1059,31 +1052,31 @@
                 html += '</div>';
             }
 
-            // Filtros etiquetas
-            if (listaEtiquetas.length > 0) {
-                html += '<div class="filter-group"><h4>Etiquetas</h4>';
-                listaEtiquetas.forEach(e => {
-                    const chkId = `filter_etq_${e.id}`;
+            // Tags filters
+            if (tagsList.length > 0) {
+                html += '<div class="filter-group"><h4>Tags</h4>';
+                tagsList.forEach(e => {
+                    const chkId = `filter_tag_${e.id}`;
                     const checked = document.getElementById(chkId) ? document.getElementById(chkId).checked : false;
-                    html += `<label><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.nombre}</label><br>`;
+                    html += `<label><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.name}</label><br>`;
                 });
                 html += '</div>';
             }
 
-            // Filtros campos personalizados
-            if (listaCampoPersonalizado.length > 0) {
-                listaCampoPersonalizado.forEach(c => {
-                    html += `<div class="filter-group"><h4>${c.nombre}</h4>`;
-                    const inpId = `filter_camp_${c.id}`;
-                    if (c.tipo === 'texto') {
+            // Custom fields filters
+            if (customFieldsList.length > 0) {
+                customFieldsList.forEach(c => {
+                    html += `<div class="filter-group"><h4>${c.name}</h4>`;
+                    const inpId = `filter_field_${c.id}`;
+                    if (c.type === 'text') {
                         const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
-                        html += `<input type="text" id="${inpId}" placeholder="Filtrar..." value="${cur}" style="width:90%">`;
+                        html += `<input type="text" id="${inpId}" placeholder="Filter..." value="${cur}" style="width:90%">`;
                     } else {
                         const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
-                        const opts = obtenerOpcionesCampo(c.id);
+                        const opts = getFieldOptions(c.id);
                         html += `<select id="${inpId}" style="width:90%"><option value="">—</option>`;
                         opts.forEach(o => {
-                            html += `<option value="${o.id}" ${cur === String(o.id) ? 'selected' : ''}>${o.valor}</option>`;
+                            html += `<option value="${o.id}" ${cur === String(o.id) ? 'selected' : ''}>${o.value}</option>`;
                         });
                         html += `</select>`;
                     }
@@ -1093,97 +1086,95 @@
 
             container.innerHTML = html;
 
-            // Asignar eventos change/input para refrescar
+            // Assign change/input listeners to refresh table values
             container.querySelectorAll('input, select').forEach(el => {
-                el.addEventListener('change', () => actualizarTabla());
+                el.addEventListener('change', () => updateTable());
                 if (el.tagName === 'INPUT' && el.type === 'text') {
-                    el.addEventListener('input', () => actualizarTabla());
+                    el.addEventListener('input', () => updateTable());
                 }
             });
         }
 
-        function obtenerFiltrosActivos() {
-            const f = { nombre: '', car: {}, etq: [], camp: {} };
+        function getActiveFilters() {
+            const f = { name: '', feature: {}, tag: [], field: {} };
 
-            const fn = document.getElementById('filterNombre');
-            if (fn) f.nombre = fn.value.toLowerCase().trim();
+            const fn = document.getElementById('filterName');
+            if (fn) f.name = fn.value.toLowerCase().trim();
 
-            listaCaracteristicas.forEach(c => {
-                const el = document.getElementById(`filter_car_${c.id}`);
-                if (el && el.value) f.car[c.id] = el.value;
+            featuresList.forEach(c => {
+                const el = document.getElementById(`filter_feature_${c.id}`);
+                if (el && el.value) f.feature[c.id] = el.value;
             });
 
-            listaEtiquetas.forEach(e => {
-                const el = document.getElementById(`filter_etq_${e.id}`);
-                if (el && el.checked) f.etq.push(e.id);
+            tagsList.forEach(e => {
+                const el = document.getElementById(`filter_tag_${e.id}`);
+                if (el && el.checked) f.tag.push(e.id);
             });
 
-            listaCampoPersonalizado.forEach(c => {
-                const el = document.getElementById(`filter_camp_${c.id}`);
-                if (el && el.value) f.camp[c.id] = el.value;
+            customFieldsList.forEach(c => {
+                const el = document.getElementById(`filter_field_${c.id}`);
+                if (el && el.value) f.field[c.id] = el.value;
             });
 
             return f;
         }
 
-        function filtrarEntidades(filas, filtros) {
-            // Primero construir un map con datos relacionales
-            const carMap = {};
-            const carRes = db.exec(`SELECT entidad_id, caracteristica_id, valor FROM entidad_caracteristicas;`);
-            if (carRes.length > 0) {
-                carRes[0].values.forEach(r => {
-                    if (!carMap[r[0]]) carMap[r[0]] = {};
-                    carMap[r[0]][r[1]] = r[2];
+        function filterEntities(rows, filters) {
+            const featureMap = {};
+            const featureRes = db.exec(`SELECT entity_id, feature_id, value FROM entity_features;`);
+            if (featureRes.length > 0) {
+                featureRes[0].values.forEach(r => {
+                    if (!featureMap[r[0]]) featureMap[r[0]] = {};
+                    featureMap[r[0]][r[1]] = r[2];
                 });
             }
 
-            const etqMap = {};
-            const etqRes = db.exec(`SELECT entidad_id, etiqueta_id FROM entidad_etiquetas;`);
-            if (etqRes.length > 0) {
-                etqRes[0].values.forEach(r => {
-                    if (!etqMap[r[0]]) etqMap[r[0]] = [];
-                    etqMap[r[0]].push(r[1]);
+            const tagMap = {};
+            const tagRes = db.exec(`SELECT entity_id, tag_id FROM entity_tags;`);
+            if (tagRes.length > 0) {
+                tagRes[0].values.forEach(r => {
+                    if (!tagMap[r[0]]) tagMap[r[0]] = [];
+                    tagMap[r[0]].push(r[1]);
                 });
             }
 
-            const campMap = {};
-            const campRes = db.exec("SELECT entidad_id, campo_id, valor FROM entidad_campo_valor;");
-            if (campRes.length > 0) {
-                campRes[0].values.forEach(r => {
-                    if (!campMap[r[0]]) campMap[r[0]] = {};
-                    campMap[r[0]][r[1]] = r[2];
+            const fieldMap = {};
+            const fieldRes = db.exec("SELECT entity_id, field_id, value FROM entity_field_value;");
+            if (fieldRes.length > 0) {
+                fieldRes[0].values.forEach(r => {
+                    if (!fieldMap[r[0]]) fieldMap[r[0]] = {};
+                    fieldMap[r[0]][r[1]] = r[2];
                 });
             }
 
-            return filas.filter(fila => {
-                const uid = fila[0];
+            return rows.filter(row => {
+                const uid = row[0];
 
-                // Nombre
-                if (filtros.nombre && !String(fila[1]).toLowerCase().includes(filtros.nombre)) return false;
+                // Name
+                if (filters.name && !String(row[1]).toLowerCase().includes(filters.name)) return false;
 
-                // Características
-                for (const [carId, valEsperado] of Object.entries(filtros.car)) {
-                    const valEntidad = carMap[uid] ? carMap[uid][carId] : null;
-                    if (valEntidad !== valEsperado) return false;
+                // Features
+                for (const [featureId, expectedVal] of Object.entries(filters.feature)) {
+                    const entityVal = featureMap[uid] ? featureMap[uid][featureId] : null;
+                    if (entityVal !== expectedVal) return false;
                 }
 
-                // Etiquetas
-                for (const etqId of filtros.etq) {
-                    const tiene = etqMap[uid] && etqMap[uid].includes(etqId);
-                    if (!tiene) return false;
+                // Tags
+                for (const tagId of filters.tag) {
+                    const hasTag = tagMap[uid] && tagMap[uid].includes(tagId);
+                    if (!hasTag) return false;
                 }
 
-                // Campos personalizados
-                for (const [campId, valEsperado] of Object.entries(filtros.camp)) {
-                    const valEntidad = campMap[uid] ? campMap[uid][campId] : null;
-                    if (valEntidad === undefined) return false;
-                    // Para texto: contains; para lista: exact match
-                    const campo = listaCampoPersonalizado.find(c => c.id === parseInt(campId));
-                    if (campo && campo.tipo === 'texto') {
-                        if (!String(valEntidad).toLowerCase().includes(String(valEsperado).toLowerCase())) return false;
+                // Custom fields
+                for (const [fieldId, expectedVal] of Object.entries(filters.field)) {
+                    const entityVal = fieldMap[uid] ? fieldMap[uid][fieldId] : null;
+                    if (entityVal === undefined) return false;
+                    const field = customFieldsList.find(c => c.id === parseInt(fieldId));
+                    if (field && field.type === 'text') {
+                        if (!String(entityVal).toLowerCase().includes(String(expectedVal).toLowerCase())) return false;
                     } else {
-                        const ids = String(valEntidad).split(',').filter(Boolean);
-                        if (!ids.includes(String(valEsperado))) return false;
+                        const ids = String(entityVal).split('.').filter(Boolean);
+                        if (!ids.includes(String(expectedVal))) return false;
                     }
                 }
 
@@ -1191,92 +1182,90 @@
             });
         }
 
-        // ─── Fin Filtros ──────────────────────────────────────────
-
-        // Función para renderizar el contenido de la base de datos en el HTML
-        function actualizarTabla() {
+        // Render main data components into HTML layout table
+        function updateTable() {
             if (!db) return;
 
             try {
-                const res = db.exec("SELECT * FROM entidades;");
+                const res = db.exec("SELECT * FROM entities;");
                 const container = document.getElementById('tableContainer');
 
                 if (res.length === 0 || res[0].values.length === 0) {
-                    container.innerHTML = "<em>La tabla 'entidades' está vacía.</em>";
+                    container.innerHTML = "<em>The 'entities' table is empty.</em>";
                     return;
                 }
 
-                const columnas = res[0].columns;
-                let filas = res[0].values;
+                const columns = res[0].columns;
+                let rows = res[0].values;
 
-                // Cargar características de entidades
-                const carRes = db.exec(`SELECT uc.entidad_id, c.nombre, uc.valor, c.factor
-                    FROM entidad_caracteristicas uc JOIN caracteristicas c ON uc.caracteristica_id = c.id;`);
-                const userCars = {};
-                if (carRes.length > 0) {
-                    carRes[0].values.forEach(r => {
+                // Fetch entity features
+                const featureRes = db.exec(`SELECT ue.entity_id, c.name, ue.value, c.factor
+                    FROM entity_features ue JOIN features c ON ue.feature_id = c.id;`);
+                const userFeatures = {};
+                if (featureRes.length > 0) {
+                    featureRes[0].values.forEach(r => {
                         const uid = r[0];
-                        if (!userCars[uid]) userCars[uid] = [];
-                        userCars[uid].push({ nombre: r[1], valor: r[2], factor: r[3] });
+                        if (!userFeatures[uid]) userFeatures[uid] = [];
+                        userFeatures[uid].push({ name: r[1], value: r[2], factor: r[3] });
                     });
                 }
 
-                // Cargar etiquetas de entidades
-                const etqRes = db.exec(`SELECT ue.entidad_id, e.nombre, e.factor
-                    FROM entidad_etiquetas ue JOIN etiquetas e ON ue.etiqueta_id = e.id;`);
-                const userEtqs = {};
-                if (etqRes.length > 0) {
-                    etqRes[0].values.forEach(r => {
+                // Fetch entity tags
+                const tagRes = db.exec(`SELECT ut.entity_id, e.name, e.factor
+                    FROM entity_tags ut JOIN tags e ON ut.tag_id = e.id;`);
+                const userTags = {};
+                if (tagRes.length > 0) {
+                    tagRes[0].values.forEach(r => {
                         const uid = r[0];
-                        if (!userEtqs[uid]) userEtqs[uid] = [];
-                        userEtqs[uid].push({ nombre: r[1], factor: r[2] });
+                        if (!userTags[uid]) userTags[uid] = [];
+                        userTags[uid].push({ name: r[1], factor: r[2] });
                     });
                 }
 
-                // Cargar valores de campos personalizados
-                const campValRes = db.exec("SELECT entidad_id, campo_id, valor FROM entidad_campo_valor;");
-                const userCampVals = {};
-                if (campValRes.length > 0) {
-                    campValRes[0].values.forEach(r => {
+                // Fetch entity custom fields values
+                const fieldValRes = db.exec("SELECT entity_id, field_id, value FROM entity_field_value;");
+                const userFieldVals = {};
+                if (fieldValRes.length > 0) {
+                    fieldValRes[0].values.forEach(r => {
                         const uid = r[0];
-                        if (!userCampVals[uid]) userCampVals[uid] = {};
-                        userCampVals[uid][r[1]] = r[2];
+                        if (!userFieldVals[uid]) userFieldVals[uid] = {};
+                        userFieldVals[uid][r[1]] = r[2];
                     });
                 }
 
-                // Aplicar filtros
-                const filtros = obtenerFiltrosActivos();
-                filas = filtrarEntidades(filas, filtros);
-                if (filas.length === 0) {
-                    container.innerHTML = '<em style="color:#999">No hay entidades que coincidan con los filtros.</em>';
+                // Apply filters
+                const filters = getActiveFilters();
+                rows = filterEntities(rows, filters);
+                if (rows.length === 0) {
+                    container.innerHTML = '<em style="color:#999">No entities match the selected filters.</em>';
                     return;
                 }
 
-                // Puntaje: cargar opciones de campos personalizados para el cálculo
-                const allCampOpts = {};
-                listaCampoPersonalizado.forEach(c => {
-                    if (c.tipo === 'lista_unico' || c.tipo === 'lista_multiple') {
-                        allCampOpts[c.id] = obtenerOpcionesCampo(c.id);
+                // Score Calculation setup
+                const allFieldOpts = {};
+                customFieldsList.forEach(c => {
+                    if (c.type === 'single_list' || c.type === 'multi_list') {
+                        allFieldOpts[c.id] = getFieldOptions(c.id);
                     }
                 });
 
                 const GRADE_VALS = { S: 5, A: 4, B: 3, C: 2, D: 1, E: -1, F: -2 };
 
-                function calcularPuntaje(uid) {
+                function calculateScore(uid) {
                     let score = 0;
-                    (userCars[uid] || []).forEach(c => {
+                    (userFeatures[uid] || []).forEach(c => {
                         const factor = c.factor != null ? c.factor : 1;
-                        const gv = GRADE_VALS[c.valor] || 0;
+                        const gv = GRADE_VALS[c.value] || 0;
                         score += factor * gv;
                     });
 
-                    (listaCampoPersonalizado || []).forEach(c => {
-                        if (c.tipo !== 'lista_unico' && c.tipo !== 'lista_multiple') return;
-                        const cv = userCampVals[uid] || {};
+                    (customFieldsList || []).forEach(c => {
+                        if (c.type !== 'single_list' && c.type !== 'multi_list') return;
+                        const cv = userFieldVals[uid] || {};
                         const val = cv[c.id];
                         if (val === undefined) return;
                         const selectedIds = String(val).split(',').filter(Boolean);
-                        const opts = allCampOpts[c.id] || [];
+                        const opts = allFieldOpts[c.id] || [];
                         const sel = opts.filter(o => selectedIds.includes(String(o.id)));
                         if (sel.length > 0) {
                             const sum = sel.reduce((a, o) => a + (o.factor != null ? o.factor : 1), 0);
@@ -1284,7 +1273,7 @@
                         }
                     });
 
-                    (userEtqs[uid] || []).forEach(e => {
+                    (userTags[uid] || []).forEach(e => {
                         score *= (e.factor != null ? e.factor : 1);
                     });
 
@@ -1292,13 +1281,13 @@
                 }
 
                 if (sortColumn === -1) {
-                    filas.sort((a, b) => {
-                        const pa = calcularPuntaje(a[0]);
-                        const pb = calcularPuntaje(b[0]);
+                    rows.sort((a, b) => {
+                        const pa = calculateScore(a[0]);
+                        const pb = calculateScore(b[0]);
                         return sortAsc ? pa - pb : pb - pa;
                     });
                 } else if (sortColumn !== null) {
-                    filas.sort((a, b) => {
+                    rows.sort((a, b) => {
                         const valA = a[sortColumn];
                         const valB = b[sortColumn];
                         if (valA < valB) return sortAsc ? -1 : 1;
@@ -1307,95 +1296,95 @@
                     });
                 }
 
-                const colNombre = columnas.indexOf('nombre');
-                const colImagen = columnas.indexOf('imagen');
+                const colNameIndex = columns.indexOf('name');
+                const colImageIndex = columns.indexOf('image');
 
                 let html = '<table><thead><tr>';
-                columnas.forEach((col, i) => {
-                    if (col === 'imagen') {
-                        html += '<th>Imagen</th>';
+                columns.forEach((col, i) => {
+                    if (col === 'image') {
+                        html += '<th>Image</th>';
                         return;
                     }
-                    const indicador = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
-                    html += `<th data-col="${i}" style="cursor:pointer">${col}${indicador}</th>`;
+                    const indicator = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
+                    html += `<th data-col="${i}" style="cursor:pointer">${col.charAt(0).toUpperCase() + col.slice(1)}${indicator}</th>`;
                 });
-                const indicPunt = sortColumn === -1 ? (sortAsc ? ' ▲' : ' ▼') : '';
-                html += `<th data-col="-1" style="cursor:pointer">Puntaje${indicPunt}</th><th>Caract.</th><th>Etiquetas</th><th>Camp. Pers.</th><th>Acciones</th>`;
+                const indicScore = sortColumn === -1 ? (sortAsc ? ' ▲' : ' ▼') : '';
+                html += `<th data-col="-1" style="cursor:pointer">Score${indicScore}</th><th>Features</th><th>Tags</th><th>Custom Fields</th><th>Actions</th>`;
                 html += '</tr></thead><tbody>';
 
-                filas.forEach(fila => {
-                    const id = fila[0];
-                    const nombreArchivo = fila[colImagen] || null;
-                    const cars = userCars[id] || [];
+                rows.forEach(row => {
+                    const id = row[0];
+                    const filename = row[colImageIndex] || null;
+                    const features = userFeatures[id] || [];
                     html += `<tr data-id="${id}" style="cursor:default">`;
-                    fila.forEach((celda, i) => {
-                        const colName = columnas[i];
-                        if (colName === 'imagen') {
-                            if (celda) {
-                                html += `<td><img class="img-thumb view-img" data-file="${celda}" src="" title="${celda}"></td>`;
+                    row.forEach((cell, i) => {
+                        const colName = columns[i];
+                        if (colName === 'image') {
+                            if (cell) {
+                                html += `<td><img class="img-thumb view-img" data-file="${cell}" src="" title="${cell}"></td>`;
                             } else {
-                                html += '<td><em>Sin imagen</em></td>';
+                                html += '<td><em>No image</em></td>';
                             }
-                        } else if (i === colNombre) {
-                            html += `<td class="editable" data-id="${id}" data-col="${i}">${celda}</td>`;
+                        } else if (i === colNameIndex) {
+                            html += `<td class="editable" data-id="${id}" data-col="${i}">${cell}</td>`;
                         } else {
-                            html += `<td>${celda}</td>`;
+                            html += `<td>${cell}</td>`;
                         }
                     });
-                    // Columna Puntaje
-                    const puntaje = calcularPuntaje(id);
-                    html += `<td style="font-weight:bold;text-align:center">${puntaje}</td>`;
-                    // Columna Caract.
-                    html += '<td class="car-cell" data-id="' + id + '">';
-                    if (cars.length > 0) {
-                        cars.forEach(c => {
-                            const color = COLORES_GRADO[c.valor] || '#333';
-                            html += `<span class="car-badge" style="display:inline-block;margin:1px 4px 1px 0;padding:1px 6px;border-radius:3px;background:${color}20;color:${color};font-weight:bold;font-size:0.85em">${c.nombre}: ${c.valor}</span>`;
+                    // Score Column
+                    const score = calculateScore(id);
+                    html += `<td style="font-weight:bold;text-align:center">${score}</td>`;
+                    // Features Column
+                    html += '<td class="feature-cell" data-id="' + id + '">';
+                    if (features.length > 0) {
+                        features.forEach(c => {
+                            const color = GRADE_COLORS[c.value] || '#333';
+                            html += `<span class="feature-badge" style="display:inline-block;margin:1px 4px 1px 0;padding:1px 6px;border-radius:3px;background:${color}20;color:${color};font-weight:bold;font-size:0.85em">${c.name}: ${c.value}</span>`;
                         });
                     } else {
                         html += '<em style="font-size:0.85em;color:#999">—</em>';
                     }
                     html += '</td>';
-                    // Columna Etiquetas
+                    // Tags Column
                     html += '<td class="tag-cell" data-id="' + id + '">';
-                    const etqs = userEtqs[id] || [];
-                    if (etqs.length > 0) {
-                        etqs.forEach(t => {
-                            html += `<span class="tag-badge">${t.nombre}</span>`;
+                    const tags = userTags[id] || [];
+                    if (tags.length > 0) {
+                        tags.forEach(t => {
+                            html += `<span class="tag-badge">${t.name}</span>`;
                         });
                     } else {
                         html += '<em style="font-size:0.85em;color:#999">—</em>';
                     }
                     html += '</td>';
-                    // Columna Campos Personalizados
-                    html += '<td class="camp-cell" data-id="' + id + '" style="max-width:250px;font-size:0.85em">';
-                    const cvals = userCampVals[id] || {};
-                    if (listaCampoPersonalizado.length > 0) {
-                        listaCampoPersonalizado.forEach(c => {
+                    // Custom Fields Column
+                    html += '<td class="field-cell" data-id="' + id + '" style="max-width:250px;font-size:0.85em">';
+                    const cvals = userFieldVals[id] || {};
+                    if (customFieldsList.length > 0) {
+                        customFieldsList.forEach(c => {
                             const v = cvals[c.id];
                             if (v !== undefined) {
-                                if (c.tipo === 'texto') {
-                                    html += `<div><strong>${c.nombre}:</strong> ${v}</div>`;
+                                if (c.type === 'text') {
+                                    html += `<div><strong>${c.name}:</strong> ${v}</div>`;
                                 } else {
-                                    const opts = obtenerOpcionesCampo(c.id);
+                                    const opts = getFieldOptions(c.id);
                                     const selectedIds = v.split(',').filter(Boolean);
-                                    const labels = opts.filter(o => selectedIds.includes(String(o.id))).map(o => o.valor);
-                                    html += `<div><strong>${c.nombre}:</strong> ${labels.join(', ') || '—'}</div>`;
+                                    const labels = opts.filter(o => selectedIds.includes(String(o.id))).map(o => o.value);
+                                    html += `<div><strong>${c.name}:</strong> ${labels.join(', ') || '—'}</div>`;
                                 }
                             } else {
-                                html += `<div style="color:#999"><strong>${c.nombre}:</strong> —</div>`;
+                                html += `<div style="color:#999"><strong>${c.name}:</strong> —</div>`;
                             }
                         });
                     } else {
                         html += '<em style="color:#999">—</em>';
                     }
                     html += '</td>';
-                    // Columna Acciones
+                    // Actions Column
                     html += '<td style="white-space:nowrap">';
-                    html += `<button class="edit-btn" data-id="${id}">✏️ Editar</button> `;
-                    html += `<button class="img-btn upload-img" data-id="${id}" style="background-color:#e67e22;">🖼️ Subir</button>`;
-                    if (nombreArchivo) {
-                        html += ` <button class="img-btn view-img-btn" data-file="${nombreArchivo}" style="background-color:#2ecc71;">👁️ Ver</button>`;
+                    html += `<button class="edit-btn" data-id="${id}">✏️ Edit</button> `;
+                    html += `<button class="img-btn upload-img" data-id="${id}" style="background-color:#e67e22;">🖼️ Upload</button>`;
+                    if (filename) {
+                        html += ` <button class="img-btn view-img-btn" data-file="${filename}" style="background-color:#2ecc71;">👁️ View</button>`;
                     }
                     html += '</td>';
                     html += '</tr>';
@@ -1404,7 +1393,7 @@
 
                 container.innerHTML = html;
 
-                // Asignar eventos de click a los encabezados
+                // Headers sorting listeners
                 container.querySelectorAll('th[data-col]').forEach(th => {
                     th.addEventListener('click', () => {
                         const col = parseInt(th.dataset.col);
@@ -1414,161 +1403,161 @@
                             sortColumn = col;
                             sortAsc = true;
                         }
-                        actualizarTabla();
+                        updateTable();
                     });
                 });
 
-                // Asignar eventos a los botones de editar/guardar
+                // Row action items triggers (Edit/Save toggles)
                 container.querySelectorAll('.edit-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const id = btn.dataset.id;
                         const td = container.querySelector(`td.editable[data-id="${id}"]`);
-                        const carCell = container.querySelector(`td.car-cell[data-id="${id}"]`);
-                        const etqCell = container.querySelector(`td.tag-cell[data-id="${id}"]`);
-                        const campCell = container.querySelector(`td.camp-cell[data-id="${id}"]`);
-                        const valorActual = td.textContent;
+                        const featureCell = container.querySelector(`td.feature-cell[data-id="${id}"]`);
+                        const tagCell = container.querySelector(`td.tag-cell[data-id="${id}"]`);
+                        const fieldCell = container.querySelector(`td.field-cell[data-id="${id}"]`);
+                        const currentVal = td.textContent;
 
-                        if (btn.textContent.includes('Editar')) {
-                            td.innerHTML = `<input type="text" value="${valorActual}" class="edit-input">`;
-                            btn.textContent = '💾 Guardar';
+                        if (btn.textContent.includes('Edit')) {
+                            td.innerHTML = `<input type="text" value="${currentVal}" class="edit-input">`;
+                            btn.textContent = '💾 Save';
 
-                            // Reemplazar badges de características con selects
-                            if (carCell && listaCaracteristicas.length > 0) {
-                                const carRes = db.exec(
-                                    "SELECT caracteristica_id, valor FROM entidad_caracteristicas WHERE entidad_id = ?;",
+                            // Feature items selectors matching layout
+                            if (featureCell && featuresList.length > 0) {
+                                const featureRes = db.exec(
+                                    "SELECT feature_id, value FROM entity_features WHERE entity_id = ?;",
                                     [parseInt(id)]);
                                 const vals = {};
-                                if (carRes.length > 0) {
-                                    carRes[0].values.forEach(r => { vals[r[0]] = r[1]; });
+                                if (featureRes.length > 0) {
+                                    featureRes[0].values.forEach(r => { vals[r[0]] = r[1]; });
                                 }
-                                const grados = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
+                                const grades = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
                                 let selHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
-                                listaCaracteristicas.forEach(c => {
+                                featuresList.forEach(c => {
                                     const v = vals[c.id] || 'D';
-                                    selHtml += `<label style="font-size:0.85em">${c.nombre}:
-                                        <select class="car-edit-select" data-car-id="${c.id}" style="padding:1px 2px;font-size:0.85em">
-                                            ${grados.map(g => `<option value="${g}" ${g === v ? 'selected' : ''}>${g}</option>`).join('')}
+                                    selHtml += `<label style="font-size:0.85em">${c.name}:
+                                        <select class="feature-edit-select" data-feature-id="${c.id}" style="padding:1px 2px;font-size:0.85em">
+                                            ${grades.map(g => `<option value="${g}" ${g === v ? 'selected' : ''}>${g}</option>`).join('')}
                                         </select>
                                     </label>`;
                                 });
                                 selHtml += '</div>';
-                                carCell.innerHTML = selHtml;
+                                featureCell.innerHTML = selHtml;
                             }
 
-                            // Reemplazar tags con checkboxes
-                            if (etqCell && listaEtiquetas.length > 0) {
-                                const etqRes = db.exec(
-                                    "SELECT etiqueta_id FROM entidad_etiquetas WHERE entidad_id = ?;",
+                            // Tags lists to checkboxes configuration
+                            if (tagCell && tagsList.length > 0) {
+                                const tagRes = db.exec(
+                                    "SELECT tag_id FROM entity_tags WHERE entity_id = ?;",
                                     [parseInt(id)]);
                                 const selIds = new Set();
-                                if (etqRes.length > 0) {
-                                    etqRes[0].values.forEach(r => selIds.add(r[0]));
+                                if (tagRes.length > 0) {
+                                    tagRes[0].values.forEach(r => selIds.add(r[0]));
                                 }
                                 let chkHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
-                                listaEtiquetas.forEach(e => {
+                                tagsList.forEach(e => {
                                     const checked = selIds.has(e.id) ? 'checked' : '';
                                     chkHtml += `<label style="font-size:0.85em;white-space:nowrap">
-                                        <input type="checkbox" class="etq-edit-check" data-etq-id="${e.id}" ${checked}>
-                                        ${e.nombre}
+                                        <input type="checkbox" class="tag-edit-check" data-tag-id="${e.id}" ${checked}>
+                                        ${e.name}
                                     </label>`;
                                 });
                                 chkHtml += '</div>';
-                                etqCell.innerHTML = chkHtml;
+                                tagCell.innerHTML = chkHtml;
                             }
 
-                            // Reemplazar campo personalizado con editores
-                            if (campCell && listaCampoPersonalizado.length > 0) {
-                                const cv = db.exec("SELECT campo_id, valor FROM entidad_campo_valor WHERE entidad_id = ?;", [parseInt(id)]);
+                            // Custom Field properties selectors
+                            if (fieldCell && customFieldsList.length > 0) {
+                                const cv = db.exec("SELECT field_id, value FROM entity_field_value WHERE entity_id = ?;", [parseInt(id)]);
                                 const saved = {};
                                 if (cv.length > 0) {
                                     cv[0].values.forEach(r => { saved[r[0]] = r[1]; });
                                 }
-                                let campEditHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
-                                listaCampoPersonalizado.forEach(c => {
-                                    if (c.tipo === 'texto') {
+                                let fieldEditHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+                                customFieldsList.forEach(c => {
+                                    if (c.type === 'text') {
                                         const val = saved[c.id] || '';
-                                        campEditHtml += `<label style="display:flex;flex-direction:column;gap:1px;font-size:0.85em">
-                                            ${c.nombre} <input type="text" class="camp-edit-text" data-camp-id="${c.id}" value="${val}" style="padding:1px 4px">
+                                        fieldEditHtml += `<label style="display:flex;flex-direction:column;gap:1px;font-size:0.85em">
+                                            ${c.name} <input type="text" class="field-edit-text" data-field-id="${c.id}" value="${val}" style="padding:1px 4px">
                                         </label>`;
                                     } else {
-                                        const opts = obtenerOpcionesCampo(c.id);
-                                        const isMulti = c.tipo === 'lista_multiple';
+                                        const opts = getFieldOptions(c.id);
+                                        const isMulti = c.type === 'multi_list';
                                         const savedIds = saved[c.id] ? saved[c.id].split(',').filter(Boolean) : [];
-                                        campEditHtml += `<fieldset style="border:1px solid #ddd;border-radius:3px;padding:2px 4px;margin:2px">
-                                            <legend style="font-size:0.8em">${c.nombre}</legend>`;
+                                        fieldEditHtml += `<fieldset style="border:1px solid #ddd;border-radius:3px;padding:2px 4px;margin:2px">
+                                            <legend style="font-size:0.8em">${c.name}</legend>`;
                                         opts.forEach(o => {
                                             const oid = String(o.id);
                                             if (isMulti) {
                                                 const checked = savedIds.includes(oid) ? 'checked' : '';
-                                                campEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
-                                                    <input type="checkbox" class="camp-edit-chk" data-camp-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.valor}
+                                                fieldEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                                    <input type="checkbox" class="field-edit-chk" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.value}
                                                 </label>`;
                                             } else {
                                                 const checked = savedIds.includes(oid) ? 'checked' : '';
-                                                campEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
-                                                    <input type="radio" class="camp-edit-radio" name="camp_edit_radio_${c.id}_${id}" data-camp-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.valor}
+                                                fieldEditHtml += `<label style="font-size:0.85em;white-space:nowrap">
+                                                    <input type="radio" class="field-edit-radio" name="field_edit_radio_${c.id}_${id}" data-field-id="${c.id}" data-opt-id="${o.id}" ${checked}> ${o.value}
                                                 </label>`;
                                             }
                                         });
-                                        campEditHtml += '</fieldset>';
+                                        fieldEditHtml += '</fieldset>';
                                     }
                                 });
-                                campEditHtml += '</div>';
-                                campCell.innerHTML = campEditHtml;
+                                fieldEditHtml += '</div>';
+                                fieldCell.innerHTML = fieldEditHtml;
                             }
                         } else {
                             const input = td.querySelector('.edit-input');
-                            const nuevoNombre = input.value.trim();
-                            if (!nuevoNombre) {
-                                alert("El nombre no puede estar vacío.");
+                            const newName = input.value.trim();
+                            if (!newName) {
+                                alert("Name field cannot be left blank.");
                                 return;
                             }
-                            db.run("UPDATE entidades SET nombre = ? WHERE id = ?;", [nuevoNombre, id]);
+                            db.run("UPDATE entities SET name = ? WHERE id = ?;", [newName, id]);
 
-                            // Guardar características editadas
-                            const selects = carCell ? carCell.querySelectorAll('.car-edit-select') : [];
+                            // Store features data structures modifications
+                            const selects = featureCell ? featureCell.querySelectorAll('.feature-edit-select') : [];
                             selects.forEach(sel => {
-                                const carId = parseInt(sel.dataset.carId);
-                                const valor = sel.value;
-                                db.run("INSERT OR REPLACE INTO entidad_caracteristicas (entidad_id, caracteristica_id, valor) VALUES (?, ?, ?);",
-                                    [parseInt(id), carId, valor]);
+                                const featureId = parseInt(sel.dataset.featureId);
+                                const value = sel.value;
+                                db.run("INSERT OR REPLACE INTO entity_features (entity_id, feature_id, value) VALUES (?, ?, ?);",
+                                    [parseInt(id), featureId, value]);
                             });
 
-                            // Guardar etiquetas editadas
-                            const etqChecks = etqCell ? etqCell.querySelectorAll('.etq-edit-check:checked') : [];
-                            const selectedIds = Array.from(etqChecks).map(c => parseInt(c.dataset.etqId));
-                            db.run("DELETE FROM entidad_etiquetas WHERE entidad_id = ?;", [parseInt(id)]);
+                            // Store modified tag relations structures mapping
+                            const tagChecks = tagCell ? tagCell.querySelectorAll('.tag-edit-check:checked') : [];
+                            const selectedIds = Array.from(tagChecks).map(c => parseInt(c.dataset.tagId));
+                            db.run("DELETE FROM entity_tags WHERE entity_id = ?;", [parseInt(id)]);
                             selectedIds.forEach(eid => {
-                                db.run("INSERT INTO entidad_etiquetas (entidad_id, etiqueta_id) VALUES (?, ?);", [parseInt(id), eid]);
+                                db.run("INSERT INTO entity_tags (entity_id, tag_id) VALUES (?, ?);", [parseInt(id), eid]);
                             });
 
-                            // Guardar campos personalizados editados
-                            if (campCell) {
-                                const campVals = {};
-                                campCell.querySelectorAll('.camp-edit-text').forEach(inp => {
-                                    campVals[parseInt(inp.dataset.campId)] = inp.value;
+                            // Store edited custom fields inputs content definitions
+                            if (fieldCell) {
+                                const fieldVals = {};
+                                fieldCell.querySelectorAll('.field-edit-text').forEach(inp => {
+                                    fieldVals[parseInt(inp.dataset.fieldId)] = inp.value;
                                 });
-                                campCell.querySelectorAll('.camp-edit-radio:checked').forEach(inp => {
-                                    if (inp.dataset.optId) campVals[parseInt(inp.dataset.campId)] = inp.dataset.optId;
+                                fieldCell.querySelectorAll('.field-edit-radio:checked').forEach(inp => {
+                                    if (inp.dataset.optId) fieldVals[parseInt(inp.dataset.fieldId)] = inp.dataset.optId;
                                 });
-                                campCell.querySelectorAll('.camp-edit-chk').forEach(chk => {
-                                    const cid = parseInt(chk.dataset.campId);
-                                    if (!campVals[cid]) campVals[cid] = [];
-                                    if (chk.checked) campVals[cid].push(chk.dataset.optId);
+                                fieldCell.querySelectorAll('.field-edit-chk').forEach(chk => {
+                                    const cid = parseInt(chk.dataset.fieldId);
+                                    if (!fieldVals[cid]) fieldVals[cid] = [];
+                                    if (chk.checked) fieldVals[cid].push(chk.dataset.optId);
                                 });
-                                for (const [k, v] of Object.entries(campVals)) {
+                                for (const [k, v] of Object.entries(fieldVals)) {
                                     const val = Array.isArray(v) ? v.join(',') : v;
-                                    db.run("INSERT OR REPLACE INTO entidad_campo_valor (entidad_id, campo_id, valor) VALUES (?, ?, ?);",
+                                    db.run("INSERT OR REPLACE INTO entity_field_value (entity_id, field_id, value) VALUES (?, ?, ?);",
                                         [parseInt(id), parseInt(k), val]);
                                 }
                             }
 
-                            actualizarTabla();
+                            updateTable();
                         }
                     });
                 });
 
-                // Asignar eventos a los botones de subir imagen
+                // Assign events to image upload buttons
                 container.querySelectorAll('.upload-img').forEach(btn => {
                     btn.addEventListener('click', () => {
                         uploadImageId = parseInt(btn.dataset.id);
@@ -1576,20 +1565,20 @@
                     });
                 });
 
-                // Asignar eventos a los botones de ver imagen
+                // Assign events to image viewer buttons
                 container.querySelectorAll('.view-img-btn').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         try {
-                            const url = await obtenerURLImagen(btn.dataset.file);
+                            const url = await getImageURL(btn.dataset.file);
                             document.getElementById('modalImage').src = url;
                             document.getElementById('imageModal').style.display = 'flex';
                         } catch (err) {
-                            alert('Error al cargar la imagen: ' + err.message);
+                            alert('Error loading image: ' + err.message);
                         }
                     });
                 });
 
-                // Drag & drop de imagen sobre cada fila
+                // Drag & drop file implementation on individual row indices
                 container.querySelectorAll('tr[data-id]').forEach(tr => {
                     tr.addEventListener('dragover', (e) => {
                         e.preventDefault();
@@ -1604,47 +1593,47 @@
                         const file = e.dataTransfer.files[0];
                         if (!file || !file.type.startsWith('image/')) return;
                         if (!imagesDirHandle) {
-                            alert('Primero selecciona una carpeta de imágenes (sección 2).');
+                            alert('Please select an images folder (section 2) first.');
                             return;
                         }
                         const uid = parseInt(tr.dataset.id);
                         try {
-                            const stmt = db.prepare("SELECT nombre, imagen FROM entidades WHERE id = ?");
+                            const stmt = db.prepare("SELECT name, image FROM entities WHERE id = ?");
                             stmt.bind([uid]);
                             if (!stmt.step()) { stmt.free(); return; }
                             const row = stmt.getAsObject();
                             stmt.free();
-                            if (row.imagen) {
-                                try { await eliminarImagenFS(row.imagen); } catch (_) {}
+                            if (row.image) {
+                                try { await deleteImageFS(row.image); } catch (_) {}
                             }
                             const ext = file.name.split('.').pop() || 'png';
                             const randomId = Math.random().toString(36).substring(2, 10);
-                            const nombreArchivo = `${row.nombre}_${randomId}.${ext}`;
+                            const filename = `${row.name}_${randomId}.${ext}`;
                             const blob = new Blob([await file.arrayBuffer()], { type: file.type });
-                            await guardarImagenFS(blob, nombreArchivo);
-                            db.run("UPDATE entidades SET imagen = ? WHERE id = ?;", [nombreArchivo, uid]);
-                            actualizarTabla();
+                            await saveImageFS(blob, filename);
+                            db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, uid]);
+                            updateTable();
                         } catch (err) {
                             alert('Error: ' + err.message);
                         }
                     });
                 });
 
-                // Cargar thumbnails y asignar click
+                // Load preview thumbs asynchronously
                 container.querySelectorAll('.view-img').forEach(img => {
                     (async () => {
                         try {
-                            const url = await obtenerURLImagen(img.dataset.file);
+                            const url = await getImageURL(img.dataset.file);
                             img.src = url;
                         } catch (_) {}
                     })();
                     img.addEventListener('click', async () => {
                         try {
-                            const url = await obtenerURLImagen(img.dataset.file);
+                            const url = await getImageURL(img.dataset.file);
                             document.getElementById('modalImage').src = url;
                             document.getElementById('imageModal').style.display = 'flex';
                         } catch (err) {
-                            alert('Error al cargar la imagen: ' + err.message);
+                            alert('Error loading image: ' + err.message);
                         }
                     });
                 });
@@ -1653,84 +1642,84 @@
             }
         }
 
-        // Botón: Insertar registro con el nombre del input
+        // Action Trigger: Insert new text input records execution
         document.getElementById('insertBtn').addEventListener('click', () => {
-            const nombreInput = document.getElementById('nombreInput');
-            const nombre = nombreInput.value.trim();
+            const nameInput = document.getElementById('nameInput');
+            const name = nameInput.value.trim();
 
-            if (!nombre) {
-                alert("Por favor ingresa un nombre.");
+            if (!name) {
+                alert("Please enter a name.");
                 return;
             }
 
-            db.run("INSERT INTO entidades (nombre) VALUES (?);", [nombre]);
+            db.run("INSERT INTO entities (name) VALUES (?);", [name]);
             const newId = db.exec("SELECT last_insert_rowid();");
-            const entidadId = newId[0].values[0][0];
+            const entityId = newId[0].values[0][0];
 
-            // Guardar características
-            const valores = obtenerValoresCaracteristicas();
-            guardarCaracteristicasEntidad(entidadId, valores);
+            // Save feature values
+            const values = getFeatureValues();
+            saveEntityFeatures(entityId, values);
 
-            // Guardar etiquetas
-            const etqIds = obtenerIdsEtiquetasSeleccionadas();
-            guardarEtiquetasEntidad(entidadId, etqIds);
+            // Save tag components
+            const tagIds = getSelectedTagIds();
+            saveEntityTags(entityId, tagIds);
 
-            // Guardar campos personalizados
-            const campVals = obtenerValoresCamposPersonalizados();
-            guardarValoresCampos(entidadId, campVals);
+            // Save custom field lists definitions
+            const fieldVals = getCustomFieldValues();
+            saveFieldValues(entityId, fieldVals);
 
-            nombreInput.value = '';
-            actualizarTabla();
+            nameInput.value = '';
+            updateTable();
         });
 
-        // Botón: Limpiar tabla
+        // Trigger Action: Delete existing table entries
         document.getElementById('clearBtn').addEventListener('click', () => {
-            db.run("DELETE FROM entidad_campo_valor;");
-            db.run("DELETE FROM entidad_etiquetas;");
-            db.run("DELETE FROM entidad_caracteristicas;");
-            db.run("DELETE FROM entidades;");
-            actualizarTabla();
+            db.run("DELETE FROM entity_field_value;");
+            db.run("DELETE FROM entity_tags;");
+            db.run("DELETE FROM entity_features;");
+            db.run("DELETE FROM entities;");
+            updateTable();
         });
 
-        // BOTÓN EXPORTAR: Descargar base de datos como archivo .sqlite
-        function obtenerNombreApp() {
+        // EXPORT ACTION: Generate .sqlite database package file directly
+        function getAppName() {
             const input = document.getElementById('appNameInput');
-            return input ? input.value.trim() || 'Mi App' : 'Mi App';
+            return input ? input.value.trim() || 'My App' : 'My App';
         }
 
-        function descargarBaseDatos() {
+        function downloadDatabase() {
             const binaryArray = db.export();
             const blob = new Blob([binaryArray], { type: "application/x-sqlite3" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            const ahora = new Date();
-            const año = ahora.getFullYear();
-            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-            const dia = String(ahora.getDate()).padStart(2, '0');
-            const hora = String(ahora.getHours()).padStart(2, '0');
-            const min = String(ahora.getMinutes()).padStart(2, '0');
-            const seg = String(ahora.getSeconds()).padStart(2, '0');
-            const nombreApp = obtenerNombreApp().replace(/[^a-zA-Z0-9_\-]/g, '_');
-            a.download = `${nombreApp}_${año}-${mes}-${dia}_${hora}-${min}-${seg}.sqlite`;
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const appName = getAppName().replace(/[^a-zA-Z0-9_\-]/g, '_');
+            a.download = `${appName}_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.sqlite`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         }
 
-        document.getElementById('downloadBtn').addEventListener('click', descargarBaseDatos);
+        document.getElementById('downloadBtn').addEventListener('click', downloadDatabase);
 
-        // Cargar configuración desde la DB
-        function cargarConfiguracion() {
-            const res = db.exec("SELECT valor FROM configuracion WHERE clave = 'app_name';");
-            const nombre = (res.length > 0 && res[0].values.length > 0) ? res[0].values[0][0] : 'Mi App';
-            document.getElementById('appNameInput').value = nombre;
-            document.title = nombre;
+        // Fetch user preferences configuration variables data references
+        function loadConfiguration() {
+            const res = db.exec("SELECT value FROM configuration WHERE key = 'app_name';");
+            const name = (res.length > 0 && res[0].values.length > 0) ? res[0].values[0][0] : 'My App';
+            document.getElementById('appNameInput').value = name;
+            document.title = name;
         }
 
-        // Guardar configuración al cambiar el input
+        // Apply real time changes to application tracking headers updates
         document.getElementById('appNameInput').addEventListener('input', function() {
-            db.run("INSERT OR REPLACE INTO configuracion (clave, valor) VALUES ('app_name', ?);", [this.value]);
-            document.title = this.value.trim() || 'Mi App';
+            db.run("INSERT OR REPLACE INTO configuration (key, value) VALUES ('app_name', ?);", [this.value]);
+            document.title = this.value.trim() || 'My App';
         });
 
         let pendingSave = false;
@@ -1741,14 +1730,14 @@
             setTimeout(() => {
                 if (pendingSave) {
                     pendingSave = false;
-                    if (confirm('¿Deseas descargar una copia de la base de datos antes de salir?')) {
-                        descargarBaseDatos();
+                    if (confirm('Would you like to download a backup copy of your database before exiting?')) {
+                        downloadDatabase();
                     }
                 }
             }, 100);
         });
 
-        // INPUT IMPORTAR: Leer un archivo .sqlite arrastrado o seleccionado por el usuario
+        // IMPORT CONTROL ACTION: Parse target binary files stream input data array
         document.getElementById('uploadInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1757,36 +1746,36 @@
             reader.onload = function() {
                 const Uints = new Uint8Array(reader.result);
 
-                // Cerramos la DB vieja si existía para liberar memoria
+                // Close legacy DB reference pointers allocation cleanup
                 if (db) db.close();
 
-                // Inicializamos una nueva base de datos pasando el arreglo de bytes del archivo cargado
+                // Instantiate new relational tracking data mapping elements array
                 db = new SQL.Database(Uints);
 
-                // Asegurar tablas auxiliares
-                db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
-                db.run("CREATE TABLE IF NOT EXISTS entidad_caracteristicas (entidad_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, caracteristica_id));");
-            db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
-                db.run("CREATE TABLE IF NOT EXISTS entidad_etiquetas (entidad_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (entidad_id, etiqueta_id));");
-                db.run("CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT);");
-                const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
-                if (cars.length === 0 || cars[0].values[0][0] === 0) {
-                    db.run("INSERT INTO caracteristicas (nombre, factor) VALUES ('Altura', 1.0);");
+                // Ensure data tables constraints definitions compliance
+                db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
+                db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
+                db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
+                db.run("CREATE TABLE IF NOT EXISTS entity_tags (entity_id INTEGER, tag_id INTEGER, PRIMARY KEY (entity_id, tag_id));");
+                db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
+                const featuresCount = db.exec("SELECT COUNT* as cnt FROM features;");
+                if (featuresCount.length === 0 || featuresCount[0].values[0][0] === 0) {
+                    db.run("INSERT INTO features (name, factor) VALUES ('Height', 1.0);");
                 }
-                const appCfg = db.exec("SELECT valor FROM configuracion WHERE clave = 'app_name';");
+                const appCfg = db.exec("SELECT value FROM configuration WHERE key = 'app_name';");
                 if (appCfg.length === 0 || appCfg[0].values.length === 0) {
-                    db.run("INSERT INTO configuracion (clave, valor) VALUES ('app_name', 'Mi App');");
+                    db.run("INSERT INTO configuration (key, value) VALUES ('app_name', 'My App');");
                 }
 
-                cargarCaracteristicas();
-                cargarEtiquetas();
-                cargarConfiguracion();
-                actualizarTabla();
+                loadFeatures();
+                loadTags();
+                loadConfiguration();
+                updateTable();
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // COLAPSAR PANELES: hacer clic en h3 de .card para colapsar/expandir
+        // UI Panel collapsible behaviors control listeners
         document.querySelectorAll('.card > h3').forEach(h3 => {
             h3.addEventListener('click', () => {
                 h3.parentElement.classList.toggle('collapsed');
