@@ -1399,6 +1399,7 @@
                     if (filename) {
                         html += `<button class="img-btn view-img-btn" data-file="${filename}" style="background-color:#2ecc71;">👁️ View</button>`;
                     }
+                    html += `<button class="del-entity-btn" data-id="${id}" style="background-color:#e74c3c;">🗑️ Delete</button>`;
                     html += '</td>';
                     html += '</tr>';
                 });
@@ -1433,6 +1434,13 @@
                         if (btn.textContent.includes('Edit')) {
                             td.innerHTML = `<input type="text" value="${currentVal}" class="edit-input">`;
                             btn.textContent = '💾 Save';
+                            btn.style.marginBottom = '2px';
+                            const cancelBtn = document.createElement('button');
+                            cancelBtn.textContent = '✖ Cancel';
+                            cancelBtn.className = 'cancel-edit-btn';
+                            cancelBtn.style.cssText = 'padding:4px 8px;font-size:0.85em;background-color:#95a5a6;color:white;border:none;border-radius:3px;cursor:pointer';
+                            cancelBtn.addEventListener('click', () => updateTable());
+                            btn.parentNode.insertBefore(cancelBtn, btn.nextSibling);
 
                             // Feature items selectors matching layout
                             if (featureCell && featuresList.length > 0) {
@@ -1588,6 +1596,19 @@
                         } catch (err) {
                             alert('Error loading image: ' + err.message);
                         }
+                    });
+                });
+
+                // Delete entity
+                container.querySelectorAll('.del-entity-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (!confirm('Delete this entity?')) return;
+                        const id = parseInt(btn.dataset.id);
+                        db.run("DELETE FROM entity_features WHERE entity_id = ?;", [id]);
+                        db.run("DELETE FROM entity_tags WHERE entity_id = ?;", [id]);
+                        db.run("DELETE FROM entity_field_value WHERE entity_id = ?;", [id]);
+                        db.run("DELETE FROM entities WHERE id = ?;", [id]);
+                        updateTable();
                     });
                 });
 
