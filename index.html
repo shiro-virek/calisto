@@ -304,7 +304,7 @@
             db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
 
             // Insert default feature
-            const featuresCount = db.exec("SELECT COUNT* as cnt FROM features;");
+            const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
             if (featuresCount.length === 0 || featuresCount[0].values[0][0] === 0) {
                 db.run("INSERT INTO features (name, factor) VALUES ('Height', 1.0);");
             }
@@ -1758,7 +1758,7 @@
                 db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
                 db.run("CREATE TABLE IF NOT EXISTS entity_tags (entity_id INTEGER, tag_id INTEGER, PRIMARY KEY (entity_id, tag_id));");
                 db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
-                const featuresCount = db.exec("SELECT COUNT* as cnt FROM features;");
+            const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
                 if (featuresCount.length === 0 || featuresCount[0].values[0][0] === 0) {
                     db.run("INSERT INTO features (name, factor) VALUES ('Height', 1.0);");
                 }
