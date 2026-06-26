@@ -21,6 +21,27 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
+        .card h3 {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        .card h3::after {
+            content: '▼';
+            font-size: 0.6em;
+            color: #999;
+            transition: transform 0.2s;
+        }
+        .card.collapsed h3::after {
+            transform: rotate(-90deg);
+        }
+        .card.collapsed .card-body {
+            display: none;
+        }
         button, input[type="file"]::-webkit-file-upload-button {
             background-color: #3498db;
             color: white;
@@ -95,34 +116,44 @@
 
         <div class="card" style="margin-bottom:12px">
             <h3>Gestión de Archivo</h3>
+            <div class="card-body">
             <p>Subir o descargar la base de datos.</p>
             <input type="file" id="uploadInput" accept=".sqlite,.db" style="width:100%"><br><br>
             <button id="downloadBtn" class="success">⬇️ Descargar .sqlite</button>
+            </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
             <h3>Carpeta de Imágenes</h3>
+            <div class="card-body">
             <p>Selecciona la carpeta para imágenes.</p>
             <button id="pickDirBtn">📁 Seleccionar</button>
             <span id="dirStatus" style="display:block;margin-top:4px;font-size:0.85em;color:#999;">Ninguna</span>
+            </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
             <h3>Características</h3>
+            <div class="card-body">
             <p>Valor único: F/E/D/C/B/A/S.</p>
             <button id="gestionCarBtn">⚙️ Gestionar</button>
+            </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
             <h3>Etiquetas</h3>
+            <div class="card-body">
             <p>Multiselección.</p>
             <button id="gestionEtqBtn">🏷️ Gestionar</button>
+            </div>
         </div>
 
         <div class="card" style="margin-bottom:12px">
             <h3>Campos Personalizados</h3>
+            <div class="card-body">
             <p>Texto libre, lista única o múltiple.</p>
             <button id="gestionCampBtn">🔧 Gestionar</button>
+            </div>
         </div>
     </div>
 
@@ -130,9 +161,11 @@
 
     <div class="card" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer; margin-top:50px">
         <h3>Importación por Arrastrar y Soltar</h3>
+        <div class="card-body">
         <p>Arrastra una o varias imágenes aquí para crear automáticamente un usuario por cada una.</p>
         <p style="font-size:0.9em;color:#666">El nombre del usuario se tomará del nombre del archivo (sin extensión).</p>
         <div id="dropStatus" style="margin-top:8px;color:#999;font-size:0.9em">Suelta las imágenes aquí</div>
+        </div>
     </div>
 
     <div id="modalCampos" class="modal-overlay">
@@ -201,6 +234,7 @@
 
     <div class="card">
         <h3>Operaciones</h3>
+        <div class="card-body">
         <label for="nombreInput">Nombre:</label>
         <input type="text" id="nombreInput" placeholder="Ingresa un nombre">
         <div id="carInputsContainer" style="margin-top:8px"></div>
@@ -208,16 +242,21 @@
         <div id="campInputsContainer" style="margin-top:8px"></div>
         <button id="insertBtn" style="margin-top:8px">➕ Insertar</button>
         <button id="clearBtn" style="background-color: #e74c3c;">🧹 Limpiar Tabla</button>
+        </div>
     </div>
 
     <div class="card" id="filterCard">
         <h3>Filtros</h3>
+        <div class="card-body">
         <div id="filterContainer" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start"></div>
+        </div>
     </div>
 
     <div class="card">
         <h3>Usuarios</h3>
+        <div class="card-body">
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
+        </div>
     </div>
 
     </div> <!-- /main-content -->
@@ -1703,6 +1742,13 @@
                 actualizarTabla();
             };
             reader.readAsArrayBuffer(file);
+        });
+
+        // COLAPSAR PANELES: hacer clic en h3 de .card para colapsar/expandir
+        document.querySelectorAll('.card > h3').forEach(h3 => {
+            h3.addEventListener('click', () => {
+                h3.parentElement.classList.toggle('collapsed');
+            });
         });
     </script>
 </body>
