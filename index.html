@@ -170,8 +170,8 @@
     <div class="card" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer; margin-top:50px">
         <h3>Importación por Arrastrar y Soltar</h3>
         <div class="card-body">
-        <p>Arrastra una o varias imágenes aquí para crear automáticamente un usuario por cada una.</p>
-        <p style="font-size:0.9em;color:#666">El nombre del usuario se tomará del nombre del archivo (sin extensión).</p>
+        <p>Arrastra una o varias imágenes aquí para crear automáticamente una entidad por cada una.</p>
+        <p style="font-size:0.9em;color:#666">El nombre de la entidad se tomará del nombre del archivo (sin extensión).</p>
         <div id="dropStatus" style="margin-top:8px;color:#999;font-size:0.9em">Suelta las imágenes aquí</div>
         </div>
     </div>
@@ -261,7 +261,7 @@
     </div>
 
     <div class="card">
-        <h3>Usuarios</h3>
+        <h3>Entidades</h3>
         <div class="card-body">
         <div id="tableContainer">No hay datos cargados o la tabla está vacía.</div>
         </div>
@@ -295,17 +295,17 @@
             db = new SQL.Database();
 
             // Crear tablas
-            db.run("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, imagen TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+            db.run("CREATE TABLE IF NOT EXISTS entidades (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, imagen TEXT, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
             db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
-            db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
+            db.run("CREATE TABLE IF NOT EXISTS entidad_caracteristicas (entidad_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, caracteristica_id));");
                 db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
-                db.run("CREATE TABLE IF NOT EXISTS usuario_etiquetas (usuario_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (usuario_id, etiqueta_id));");
+                db.run("CREATE TABLE IF NOT EXISTS entidad_etiquetas (entidad_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (entidad_id, etiqueta_id));");
                 db.run("CREATE TABLE IF NOT EXISTS campos_personalizados (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, descripcion TEXT, tipo TEXT CHECK(tipo IN ('texto','lista_unico','lista_multiple')));");
                 db.run("CREATE TABLE IF NOT EXISTS opciones_campo (id INTEGER PRIMARY KEY AUTOINCREMENT, campo_id INTEGER REFERENCES campos_personalizados(id), valor TEXT, factor REAL);");
-                db.run("CREATE TABLE IF NOT EXISTS usuario_campo_valor (usuario_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, campo_id));");
+                db.run("CREATE TABLE IF NOT EXISTS entidad_campo_valor (entidad_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, campo_id));");
             db.run("CREATE TABLE IF NOT EXISTS campos_personalizados (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, descripcion TEXT, tipo TEXT CHECK(tipo IN ('texto','lista_unico','lista_multiple')));");
             db.run("CREATE TABLE IF NOT EXISTS opciones_campo (id INTEGER PRIMARY KEY AUTOINCREMENT, campo_id INTEGER REFERENCES campos_personalizados(id), valor TEXT, factor REAL);");
-            db.run("CREATE TABLE IF NOT EXISTS usuario_campo_valor (usuario_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, campo_id));");
+            db.run("CREATE TABLE IF NOT EXISTS entidad_campo_valor (entidad_id INTEGER, campo_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, campo_id));");
             db.run("CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT);");
 
             // Insertar característica por defecto
@@ -389,7 +389,7 @@
                     return;
                 }
 
-                const stmt = db.prepare("SELECT nombre, imagen FROM usuarios WHERE id = ?");
+                const stmt = db.prepare("SELECT nombre, imagen FROM entidades WHERE id = ?");
                 stmt.bind([uploadImageId]);
                 if (!stmt.step()) {
                     alert('Registro no encontrado.');
@@ -412,7 +412,7 @@
                 const blob = new Blob([await file.arrayBuffer()], { type: file.type });
 
                 await guardarImagenFS(blob, nombreArchivo);
-                db.run("UPDATE usuarios SET imagen = ? WHERE id = ?;", [nombreArchivo, uploadImageId]);
+                db.run("UPDATE entidades SET imagen = ? WHERE id = ?;", [nombreArchivo, uploadImageId]);
                 actualizarTabla();
             } catch (err) {
                 alert('Error al subir la imagen: ' + err.message);
@@ -484,7 +484,7 @@
                 btn.addEventListener('click', () => {
                     if (!confirm('¿Eliminar esta característica?')) return;
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    db.run("DELETE FROM usuario_caracteristicas WHERE caracteristica_id = ?;", [id]);
+                    db.run("DELETE FROM entidad_caracteristicas WHERE caracteristica_id = ?;", [id]);
                     db.run("DELETE FROM caracteristicas WHERE id = ?;", [id]);
                     cargarCaracteristicas();
                     actualizarTabla();
@@ -552,10 +552,10 @@
             return valores;
         }
 
-        function guardarCaracteristicasUsuario(usuarioId, valores) {
+        function guardarCaracteristicasEntidad(entidadId, valores) {
             for (const [carId, valor] of Object.entries(valores)) {
-                db.run(`INSERT OR REPLACE INTO usuario_caracteristicas (usuario_id, caracteristica_id, valor) VALUES (?, ?, ?);`,
-                    [usuarioId, parseInt(carId), valor]);
+                db.run(`INSERT OR REPLACE INTO entidad_caracteristicas (entidad_id, caracteristica_id, valor) VALUES (?, ?, ?);`,
+                    [entidadId, parseInt(carId), valor]);
             }
         }
 
@@ -617,7 +617,7 @@
                 btn.addEventListener('click', () => {
                     if (!confirm('¿Eliminar esta etiqueta?')) return;
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    db.run("DELETE FROM usuario_etiquetas WHERE etiqueta_id = ?;", [id]);
+                    db.run("DELETE FROM entidad_etiquetas WHERE etiqueta_id = ?;", [id]);
                     db.run("DELETE FROM etiquetas WHERE id = ?;", [id]);
                     cargarEtiquetas();
                     actualizarTabla();
@@ -685,10 +685,10 @@
             return Array.from(checks).map(c => parseInt(c.dataset.etqId));
         }
 
-        function guardarEtiquetasUsuario(usuarioId, etiquetaIds) {
-            db.run("DELETE FROM usuario_etiquetas WHERE usuario_id = ?;", [usuarioId]);
+        function guardarEtiquetasEntidad(entidadId, etiquetaIds) {
+            db.run("DELETE FROM entidad_etiquetas WHERE entidad_id = ?;", [entidadId]);
             etiquetaIds.forEach(eid => {
-                db.run("INSERT INTO usuario_etiquetas (usuario_id, etiqueta_id) VALUES (?, ?);", [usuarioId, eid]);
+                db.run("INSERT INTO entidad_etiquetas (entidad_id, etiqueta_id) VALUES (?, ?);", [entidadId, eid]);
             });
         }
 
@@ -752,7 +752,7 @@
                 btn.addEventListener('click', () => {
                     if (!confirm('¿Eliminar este campo? También se eliminarán sus opciones y valores asociados.')) return;
                     const id = parseInt(btn.closest('tr').dataset.id);
-                    db.run("DELETE FROM usuario_campo_valor WHERE campo_id = ?;", [id]);
+                    db.run("DELETE FROM entidad_campo_valor WHERE campo_id = ?;", [id]);
                     db.run("DELETE FROM opciones_campo WHERE campo_id = ?;", [id]);
                     db.run("DELETE FROM campos_personalizados WHERE id = ?;", [id]);
                     cargarCamposPersonalizados();
@@ -901,10 +901,10 @@
             return vals;
         }
 
-        function guardarValoresCampos(usuarioId, valores) {
+        function guardarValoresCampos(entidadId, valores) {
             for (const [campId, valor] of Object.entries(valores)) {
-                db.run("INSERT OR REPLACE INTO usuario_campo_valor (usuario_id, campo_id, valor) VALUES (?, ?, ?);",
-                    [usuarioId, parseInt(campId), valor]);
+                db.run("INSERT OR REPLACE INTO entidad_campo_valor (entidad_id, campo_id, valor) VALUES (?, ?, ?);",
+                    [entidadId, parseInt(campId), valor]);
             }
         }
 
@@ -941,7 +941,7 @@
             }
         });
 
-        // Drag & Drop de imágenes para crear usuarios
+        // Drag & Drop de imágenes para crear entidades
         const dropZone = document.getElementById('dropZoneCard');
 
         dropZone.addEventListener('dragover', (e) => {
@@ -981,21 +981,21 @@
                     const nombre = file.name.replace(/\.[^/.]+$/, '').trim();
                     if (!nombre) { errores++; continue; }
 
-                    db.run("INSERT INTO usuarios (nombre) VALUES (?);", [nombre]);
+                    db.run("INSERT INTO entidades (nombre) VALUES (?);", [nombre]);
                     const newId = db.exec("SELECT last_insert_rowid();");
-                    const usuarioId = newId[0].values[0][0];
+                    const entidadId = newId[0].values[0][0];
 
                     // Guardar características con valores por defecto
                     const vals = obtenerValoresCaracteristicas();
-                    guardarCaracteristicasUsuario(usuarioId, vals);
+                    guardarCaracteristicasEntidad(entidadId, vals);
 
                     // Guardar etiquetas seleccionadas
                     const etqIds = obtenerIdsEtiquetasSeleccionadas();
-                    guardarEtiquetasUsuario(usuarioId, etqIds);
+                    guardarEtiquetasEntidad(entidadId, etqIds);
 
                     // Guardar campos personalizados
                     const campVals = obtenerValoresCamposPersonalizados();
-                    guardarValoresCampos(usuarioId, campVals);
+                    guardarValoresCampos(entidadId, campVals);
 
                     // Subir imagen
                     const ext = file.name.split('.').pop() || 'png';
@@ -1003,7 +1003,7 @@
                     const nombreArchivo = `${nombre}_${randomId}.${ext}`;
                     const blob = new Blob([await file.arrayBuffer()], { type: file.type });
                     await guardarImagenFS(blob, nombreArchivo);
-                    db.run("UPDATE usuarios SET imagen = ? WHERE id = ?;", [nombreArchivo, usuarioId]);
+                    db.run("UPDATE entidades SET imagen = ? WHERE id = ?;", [nombreArchivo, entidadId]);
 
                     creados++;
                 } catch (err) {
@@ -1013,7 +1013,7 @@
             }
 
             actualizarTabla();
-            const msg = `✅ ${creados} usuario(s) creado(s)` + (errores > 0 ? `, ${errores} error(es)` : '');
+            const msg = `✅ ${creados} entidad(es) creada(s)` + (errores > 0 ? `, ${errores} error(es)` : '');
             document.getElementById('dropStatus').textContent = msg;
             document.getElementById('dropStatus').style.color = errores > 0 ? '#e67e22' : '#2ecc71';
             setTimeout(() => {
@@ -1126,10 +1126,10 @@
             return f;
         }
 
-        function filtrarUsuarios(filas, filtros) {
+        function filtrarEntidades(filas, filtros) {
             // Primero construir un map con datos relacionales
             const carMap = {};
-            const carRes = db.exec(`SELECT usuario_id, caracteristica_id, valor FROM usuario_caracteristicas;`);
+            const carRes = db.exec(`SELECT entidad_id, caracteristica_id, valor FROM entidad_caracteristicas;`);
             if (carRes.length > 0) {
                 carRes[0].values.forEach(r => {
                     if (!carMap[r[0]]) carMap[r[0]] = {};
@@ -1138,7 +1138,7 @@
             }
 
             const etqMap = {};
-            const etqRes = db.exec(`SELECT usuario_id, etiqueta_id FROM usuario_etiquetas;`);
+            const etqRes = db.exec(`SELECT entidad_id, etiqueta_id FROM entidad_etiquetas;`);
             if (etqRes.length > 0) {
                 etqRes[0].values.forEach(r => {
                     if (!etqMap[r[0]]) etqMap[r[0]] = [];
@@ -1147,7 +1147,7 @@
             }
 
             const campMap = {};
-            const campRes = db.exec("SELECT usuario_id, campo_id, valor FROM usuario_campo_valor;");
+            const campRes = db.exec("SELECT entidad_id, campo_id, valor FROM entidad_campo_valor;");
             if (campRes.length > 0) {
                 campRes[0].values.forEach(r => {
                     if (!campMap[r[0]]) campMap[r[0]] = {};
@@ -1163,8 +1163,8 @@
 
                 // Características
                 for (const [carId, valEsperado] of Object.entries(filtros.car)) {
-                    const valUsuario = carMap[uid] ? carMap[uid][carId] : null;
-                    if (valUsuario !== valEsperado) return false;
+                    const valEntidad = carMap[uid] ? carMap[uid][carId] : null;
+                    if (valEntidad !== valEsperado) return false;
                 }
 
                 // Etiquetas
@@ -1175,14 +1175,14 @@
 
                 // Campos personalizados
                 for (const [campId, valEsperado] of Object.entries(filtros.camp)) {
-                    const valUsuario = campMap[uid] ? campMap[uid][campId] : null;
-                    if (valUsuario === undefined) return false;
+                    const valEntidad = campMap[uid] ? campMap[uid][campId] : null;
+                    if (valEntidad === undefined) return false;
                     // Para texto: contains; para lista: exact match
                     const campo = listaCampoPersonalizado.find(c => c.id === parseInt(campId));
                     if (campo && campo.tipo === 'texto') {
-                        if (!String(valUsuario).toLowerCase().includes(String(valEsperado).toLowerCase())) return false;
+                        if (!String(valEntidad).toLowerCase().includes(String(valEsperado).toLowerCase())) return false;
                     } else {
-                        const ids = String(valUsuario).split(',').filter(Boolean);
+                        const ids = String(valEntidad).split(',').filter(Boolean);
                         if (!ids.includes(String(valEsperado))) return false;
                     }
                 }
@@ -1198,20 +1198,20 @@
             if (!db) return;
 
             try {
-                const res = db.exec("SELECT * FROM usuarios;");
+                const res = db.exec("SELECT * FROM entidades;");
                 const container = document.getElementById('tableContainer');
 
                 if (res.length === 0 || res[0].values.length === 0) {
-                    container.innerHTML = "<em>La tabla 'usuarios' está vacía.</em>";
+                    container.innerHTML = "<em>La tabla 'entidades' está vacía.</em>";
                     return;
                 }
 
                 const columnas = res[0].columns;
                 let filas = res[0].values;
 
-                // Cargar características de usuarios
-                const carRes = db.exec(`SELECT uc.usuario_id, c.nombre, uc.valor, c.factor
-                    FROM usuario_caracteristicas uc JOIN caracteristicas c ON uc.caracteristica_id = c.id;`);
+                // Cargar características de entidades
+                const carRes = db.exec(`SELECT uc.entidad_id, c.nombre, uc.valor, c.factor
+                    FROM entidad_caracteristicas uc JOIN caracteristicas c ON uc.caracteristica_id = c.id;`);
                 const userCars = {};
                 if (carRes.length > 0) {
                     carRes[0].values.forEach(r => {
@@ -1221,9 +1221,9 @@
                     });
                 }
 
-                // Cargar etiquetas de usuarios
-                const etqRes = db.exec(`SELECT ue.usuario_id, e.nombre, e.factor
-                    FROM usuario_etiquetas ue JOIN etiquetas e ON ue.etiqueta_id = e.id;`);
+                // Cargar etiquetas de entidades
+                const etqRes = db.exec(`SELECT ue.entidad_id, e.nombre, e.factor
+                    FROM entidad_etiquetas ue JOIN etiquetas e ON ue.etiqueta_id = e.id;`);
                 const userEtqs = {};
                 if (etqRes.length > 0) {
                     etqRes[0].values.forEach(r => {
@@ -1234,7 +1234,7 @@
                 }
 
                 // Cargar valores de campos personalizados
-                const campValRes = db.exec("SELECT usuario_id, campo_id, valor FROM usuario_campo_valor;");
+                const campValRes = db.exec("SELECT entidad_id, campo_id, valor FROM entidad_campo_valor;");
                 const userCampVals = {};
                 if (campValRes.length > 0) {
                     campValRes[0].values.forEach(r => {
@@ -1246,9 +1246,9 @@
 
                 // Aplicar filtros
                 const filtros = obtenerFiltrosActivos();
-                filas = filtrarUsuarios(filas, filtros);
+                filas = filtrarEntidades(filas, filtros);
                 if (filas.length === 0) {
-                    container.innerHTML = '<em style="color:#999">No hay usuarios que coincidan con los filtros.</em>';
+                    container.innerHTML = '<em style="color:#999">No hay entidades que coincidan con los filtros.</em>';
                     return;
                 }
 
@@ -1435,7 +1435,7 @@
                             // Reemplazar badges de características con selects
                             if (carCell && listaCaracteristicas.length > 0) {
                                 const carRes = db.exec(
-                                    "SELECT caracteristica_id, valor FROM usuario_caracteristicas WHERE usuario_id = ?;",
+                                    "SELECT caracteristica_id, valor FROM entidad_caracteristicas WHERE entidad_id = ?;",
                                     [parseInt(id)]);
                                 const vals = {};
                                 if (carRes.length > 0) {
@@ -1458,7 +1458,7 @@
                             // Reemplazar tags con checkboxes
                             if (etqCell && listaEtiquetas.length > 0) {
                                 const etqRes = db.exec(
-                                    "SELECT etiqueta_id FROM usuario_etiquetas WHERE usuario_id = ?;",
+                                    "SELECT etiqueta_id FROM entidad_etiquetas WHERE entidad_id = ?;",
                                     [parseInt(id)]);
                                 const selIds = new Set();
                                 if (etqRes.length > 0) {
@@ -1478,7 +1478,7 @@
 
                             // Reemplazar campo personalizado con editores
                             if (campCell && listaCampoPersonalizado.length > 0) {
-                                const cv = db.exec("SELECT campo_id, valor FROM usuario_campo_valor WHERE usuario_id = ?;", [parseInt(id)]);
+                                const cv = db.exec("SELECT campo_id, valor FROM entidad_campo_valor WHERE entidad_id = ?;", [parseInt(id)]);
                                 const saved = {};
                                 if (cv.length > 0) {
                                     cv[0].values.forEach(r => { saved[r[0]] = r[1]; });
@@ -1523,23 +1523,23 @@
                                 alert("El nombre no puede estar vacío.");
                                 return;
                             }
-                            db.run("UPDATE usuarios SET nombre = ? WHERE id = ?;", [nuevoNombre, id]);
+                            db.run("UPDATE entidades SET nombre = ? WHERE id = ?;", [nuevoNombre, id]);
 
                             // Guardar características editadas
                             const selects = carCell ? carCell.querySelectorAll('.car-edit-select') : [];
                             selects.forEach(sel => {
                                 const carId = parseInt(sel.dataset.carId);
                                 const valor = sel.value;
-                                db.run("INSERT OR REPLACE INTO usuario_caracteristicas (usuario_id, caracteristica_id, valor) VALUES (?, ?, ?);",
+                                db.run("INSERT OR REPLACE INTO entidad_caracteristicas (entidad_id, caracteristica_id, valor) VALUES (?, ?, ?);",
                                     [parseInt(id), carId, valor]);
                             });
 
                             // Guardar etiquetas editadas
                             const etqChecks = etqCell ? etqCell.querySelectorAll('.etq-edit-check:checked') : [];
                             const selectedIds = Array.from(etqChecks).map(c => parseInt(c.dataset.etqId));
-                            db.run("DELETE FROM usuario_etiquetas WHERE usuario_id = ?;", [parseInt(id)]);
+                            db.run("DELETE FROM entidad_etiquetas WHERE entidad_id = ?;", [parseInt(id)]);
                             selectedIds.forEach(eid => {
-                                db.run("INSERT INTO usuario_etiquetas (usuario_id, etiqueta_id) VALUES (?, ?);", [parseInt(id), eid]);
+                                db.run("INSERT INTO entidad_etiquetas (entidad_id, etiqueta_id) VALUES (?, ?);", [parseInt(id), eid]);
                             });
 
                             // Guardar campos personalizados editados
@@ -1558,7 +1558,7 @@
                                 });
                                 for (const [k, v] of Object.entries(campVals)) {
                                     const val = Array.isArray(v) ? v.join(',') : v;
-                                    db.run("INSERT OR REPLACE INTO usuario_campo_valor (usuario_id, campo_id, valor) VALUES (?, ?, ?);",
+                                    db.run("INSERT OR REPLACE INTO entidad_campo_valor (entidad_id, campo_id, valor) VALUES (?, ?, ?);",
                                         [parseInt(id), parseInt(k), val]);
                                 }
                             }
@@ -1609,7 +1609,7 @@
                         }
                         const uid = parseInt(tr.dataset.id);
                         try {
-                            const stmt = db.prepare("SELECT nombre, imagen FROM usuarios WHERE id = ?");
+                            const stmt = db.prepare("SELECT nombre, imagen FROM entidades WHERE id = ?");
                             stmt.bind([uid]);
                             if (!stmt.step()) { stmt.free(); return; }
                             const row = stmt.getAsObject();
@@ -1622,7 +1622,7 @@
                             const nombreArchivo = `${row.nombre}_${randomId}.${ext}`;
                             const blob = new Blob([await file.arrayBuffer()], { type: file.type });
                             await guardarImagenFS(blob, nombreArchivo);
-                            db.run("UPDATE usuarios SET imagen = ? WHERE id = ?;", [nombreArchivo, uid]);
+                            db.run("UPDATE entidades SET imagen = ? WHERE id = ?;", [nombreArchivo, uid]);
                             actualizarTabla();
                         } catch (err) {
                             alert('Error: ' + err.message);
@@ -1663,21 +1663,21 @@
                 return;
             }
 
-            db.run("INSERT INTO usuarios (nombre) VALUES (?);", [nombre]);
+            db.run("INSERT INTO entidades (nombre) VALUES (?);", [nombre]);
             const newId = db.exec("SELECT last_insert_rowid();");
-            const usuarioId = newId[0].values[0][0];
+            const entidadId = newId[0].values[0][0];
 
             // Guardar características
             const valores = obtenerValoresCaracteristicas();
-            guardarCaracteristicasUsuario(usuarioId, valores);
+            guardarCaracteristicasEntidad(entidadId, valores);
 
             // Guardar etiquetas
             const etqIds = obtenerIdsEtiquetasSeleccionadas();
-            guardarEtiquetasUsuario(usuarioId, etqIds);
+            guardarEtiquetasEntidad(entidadId, etqIds);
 
             // Guardar campos personalizados
             const campVals = obtenerValoresCamposPersonalizados();
-            guardarValoresCampos(usuarioId, campVals);
+            guardarValoresCampos(entidadId, campVals);
 
             nombreInput.value = '';
             actualizarTabla();
@@ -1685,10 +1685,10 @@
 
         // Botón: Limpiar tabla
         document.getElementById('clearBtn').addEventListener('click', () => {
-            db.run("DELETE FROM usuario_campo_valor;");
-            db.run("DELETE FROM usuario_etiquetas;");
-            db.run("DELETE FROM usuario_caracteristicas;");
-            db.run("DELETE FROM usuarios;");
+            db.run("DELETE FROM entidad_campo_valor;");
+            db.run("DELETE FROM entidad_etiquetas;");
+            db.run("DELETE FROM entidad_caracteristicas;");
+            db.run("DELETE FROM entidades;");
             actualizarTabla();
         });
 
@@ -1765,9 +1765,9 @@
 
                 // Asegurar tablas auxiliares
                 db.run("CREATE TABLE IF NOT EXISTS caracteristicas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL);");
-                db.run("CREATE TABLE IF NOT EXISTS usuario_caracteristicas (usuario_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (usuario_id, caracteristica_id));");
+                db.run("CREATE TABLE IF NOT EXISTS entidad_caracteristicas (entidad_id INTEGER, caracteristica_id INTEGER, valor TEXT, PRIMARY KEY (entidad_id, caracteristica_id));");
             db.run("CREATE TABLE IF NOT EXISTS etiquetas (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT UNIQUE, factor REAL, descripcion TEXT);");
-                db.run("CREATE TABLE IF NOT EXISTS usuario_etiquetas (usuario_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (usuario_id, etiqueta_id));");
+                db.run("CREATE TABLE IF NOT EXISTS entidad_etiquetas (entidad_id INTEGER, etiqueta_id INTEGER, PRIMARY KEY (entidad_id, etiqueta_id));");
                 db.run("CREATE TABLE IF NOT EXISTS configuracion (clave TEXT PRIMARY KEY, valor TEXT);");
                 const cars = db.exec("SELECT COUNT(*) as cnt FROM caracteristicas;");
                 if (cars.length === 0 || cars[0].values[0][0] === 0) {
