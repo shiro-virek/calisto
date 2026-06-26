@@ -1393,11 +1393,11 @@
                     }
                     html += '</td>';
                     // Actions Column
-                    html += '<td style="white-space:nowrap">';
-                    html += `<button class="edit-btn" data-id="${id}">✏️ Edit</button> `;
+                    html += '<td style="display:flex;flex-direction:column;gap:4px">';
+                    html += `<button class="edit-btn" data-id="${id}">✏️ Edit</button>`;
                     html += `<button class="img-btn upload-img" data-id="${id}" style="background-color:#e67e22;">🖼️ Upload</button>`;
                     if (filename) {
-                        html += ` <button class="img-btn view-img-btn" data-file="${filename}" style="background-color:#2ecc71;">👁️ View</button>`;
+                        html += `<button class="img-btn view-img-btn" data-file="${filename}" style="background-color:#2ecc71;">👁️ View</button>`;
                     }
                     html += '</td>';
                     html += '</tr>';
