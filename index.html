@@ -637,7 +637,7 @@
                 return;
             }
             let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
-            tagsList.forEach(e => {
+            [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                 const checked = selectedIds.includes(e.id) ? 'checked' : '';
                 html += `<label class="tag-check">
                     <input type="checkbox" class="tag-checkbox" data-tag-id="${e.id}" ${checked}>
@@ -712,7 +712,7 @@
         }
 
         function getFieldOptions(fieldId) {
-            const res = db.exec("SELECT id, value, factor FROM field_options WHERE field_id = ? ORDER BY id;", [fieldId]);
+            const res = db.exec("SELECT id, value, factor FROM field_options WHERE field_id = ? ORDER BY value;", [fieldId]);
             if (res.length === 0) return [];
             return res[0].values.map(r => ({ id: r[0], value: r[1], factor: r[2] }));
         }
@@ -840,7 +840,7 @@
             container.innerHTML = '';
             if (customFieldsList.length === 0) return;
             let html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
-            customFieldsList.forEach(c => {
+            [...customFieldsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
                 if (c.type === 'text') {
                     const val = savedValues[c.id] || '';
                     html += `<label style="display:flex;flex-direction:column;gap:2px;font-size:0.9em">
@@ -1065,7 +1065,7 @@
             // Tags filters
             if (tagsList.length > 0) {
                 html += '<div class="filter-group"><h4>Tags</h4>';
-                tagsList.forEach(e => {
+                [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                     const chkId = `filter_tag_${e.id}`;
                     const checked = document.getElementById(chkId) ? document.getElementById(chkId).checked : false;
                     html += `<label><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.name}</label><br>`;
@@ -1075,7 +1075,7 @@
 
             // Custom fields filters
             if (customFieldsList.length > 0) {
-                customFieldsList.forEach(c => {
+                [...customFieldsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
                     html += `<div class="filter-group"><h4>${c.name}</h4>`;
                     const inpId = `filter_field_${c.id}`;
                     if (c.type === 'text') {
@@ -1349,6 +1349,8 @@
                     // Features Column
                     html += '<td class="feature-cell" data-id="' + id + '">';
                     if (features.length > 0) {
+                        const gradeOrder = { S: 0, A: 1, B: 2, C: 3, D: 4, E: 5, F: 6 };
+                        features.sort((a, b) => (gradeOrder[a.value] ?? 99) - (gradeOrder[b.value] ?? 99));
                         features.forEach(c => {
                             const color = GRADE_COLORS[c.value] || '#333';
                             html += `<span class="feature-badge" style="display:inline-block;margin:1px 4px 1px 0;padding:1px 6px;border-radius:3px;background:${color}20;color:${color};font-weight:bold;font-size:0.85em">${c.name}: ${c.value}</span>`;
@@ -1475,7 +1477,7 @@
                                     tagRes[0].values.forEach(r => selIds.add(r[0]));
                                 }
                                 let chkHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
-                                tagsList.forEach(e => {
+                                [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                                     const checked = selIds.has(e.id) ? 'checked' : '';
                                     chkHtml += `<label style="font-size:0.85em;white-space:nowrap">
                                         <input type="checkbox" class="tag-edit-check" data-tag-id="${e.id}" ${checked}>
