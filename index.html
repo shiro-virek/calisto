@@ -115,6 +115,14 @@
         <h2>🔧 Settings</h2>
 
         <div class="card" style="margin-bottom:12px">
+            <h3>Setup</h3>
+            <div class="card-body">
+                <p>Select images folder and database file.</p>
+                <button id="setupBtn">🚀 Setup</button>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
             <h3>General Configuration</h3>
             <div class="card-body">
                 <label for="appNameInput">Application Name:</label>
@@ -335,7 +343,7 @@
         });
 
         // Initialize images folder
-        document.getElementById('pickDirBtn').addEventListener('click', async () => {
+        async function pickImageDir() {
             try {
                 baseDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                 imagesDirHandle = await baseDirHandle.getDirectoryHandle('images', { create: true });
@@ -346,7 +354,8 @@
                     alert('Error selecting folder: ' + err.message);
                 }
             }
-        });
+        }
+        document.getElementById('pickDirBtn').addEventListener('click', pickImageDir);
 
         // File System Access API: save image
         async function saveImageFS(blob, filename) {
@@ -1736,6 +1745,11 @@
                     }
                 }
             }, 100);
+        });
+
+        document.getElementById('setupBtn').addEventListener('click', async () => {
+            await pickImageDir();
+            document.getElementById('uploadInput').click();
         });
 
         // IMPORT CONTROL ACTION: Parse target binary files stream input data array
