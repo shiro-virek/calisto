@@ -71,6 +71,12 @@
         .edit-input { width: 90%; padding: 4px; }
         .img-btn { padding: 4px 8px; font-size: 0.85em; margin: 2px 0; }
         .img-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+        .compact-toggle { position:relative; display:inline-block; width:36px; height:20px; cursor:pointer; }
+        .compact-toggle input { opacity:0; width:0; height:0; }
+        .toggle-slider { position:absolute; top:0; left:0; right:0; bottom:0; background:#ccc; border-radius:20px; transition:0.3s; }
+        .toggle-slider::before { content:''; position:absolute; left:3px; bottom:3px; width:14px; height:14px; background:white; border-radius:50%; transition:0.3s; }
+        .compact-toggle input:checked + .toggle-slider { background:#3498db; }
+        .compact-toggle input:checked + .toggle-slider::before { transform:translateX(16px); }
         .badge-S { color: #e74c3c; font-weight: bold; }
         .badge-A { color: #e67e22; font-weight: bold; }
         .badge-B { color: #d4a017; font-weight: bold; }
@@ -275,6 +281,13 @@
         <div class="card">
             <h3>Entities</h3>
             <div class="card-body">
+                <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
+                    <label class="compact-toggle" id="compactToggleLabel">
+                        <input type="checkbox" id="compactToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span id="compactLabel" style="font-size:0.9em;color:#555">Compact Mode</span>
+                </div>
                 <div id="tableContainer">No data loaded or table is empty.</div>
             </div>
         </div>
@@ -337,6 +350,7 @@
 
         let sortColumn = null;
         let sortAsc = true;
+        let compactMode = false;
         let baseDirHandle = null;
         let imagesDirHandle = null;
         let uploadImageId = null;
@@ -344,6 +358,12 @@
         // Sidebar toggle
         document.getElementById('sidebarToggle').addEventListener('click', () => {
             document.getElementById('sidebar').classList.toggle('open');
+        });
+
+        // Compact mode toggle
+        document.getElementById('compactToggle').addEventListener('change', function() {
+            compactMode = this.checked;
+            updateTable();
         });
 
         // Initialize images folder
@@ -1390,6 +1410,7 @@
 
                 let html = '<table><thead><tr>';
                 columns.forEach((col, i) => {
+                    if (compactMode && col !== 'name' && col !== 'image') return;
                     if (col === 'image') {
                         html += '<th>Image</th>';
                         return;
@@ -1399,7 +1420,10 @@
                     html += `<th data-col="${i}" style="cursor:pointer">${col.charAt(0).toUpperCase() + col.slice(1)}${indicator}</th>`;
                 });
                 const indicScore = sortColumn === -1 ? (sortAsc ? ' ▲' : ' ▼') : '';
-                html += `<th data-col="-1" style="cursor:pointer">Score${indicScore}</th><th>Features</th><th>Tags</th><th>Custom Fields</th><th>Actions</th>`;
+                html += `<th data-col="-1" style="cursor:pointer">Score${indicScore}</th>`;
+                if (!compactMode) {
+                    html += '<th>Features</th><th>Tags</th><th>Custom Fields</th><th>Actions</th>';
+                }
                 html += '</tr></thead><tbody>';
 
                 rows.forEach(row => {
@@ -1409,6 +1433,7 @@
                     html += `<tr data-id="${id}" style="cursor:default">`;
                     row.forEach((cell, i) => {
                         const colName = columns[i];
+                        if (compactMode && colName !== 'name' && colName !== 'image') return;
                         if (colName === 'id' || colName === 'date') return;
                         if (colName === 'image') {
                             if (cell) {
@@ -1425,6 +1450,7 @@
                     // Score Column
                     const score = calculateScore(id);
                     html += `<td style="font-weight:bold;text-align:center">${score}</td>`;
+                    if (compactMode) { html += '</tr>'; return; }
                     // Features Column
                     html += '<td class="feature-cell" data-id="' + id + '">';
                     if (features.length > 0) {
