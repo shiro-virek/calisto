@@ -102,28 +102,37 @@ function filterFieldOptions(input) {
     const q = input.value.toLowerCase().trim();
     const container = input.parentElement.nextElementSibling;
     if (!container) return;
-    container.querySelectorAll('fieldset').forEach(fs => {
-        const labels = fs.querySelectorAll('label[data-optname]');
-        let visibleCount = 0;
+    const fieldsets = container.querySelectorAll('fieldset');
+    if (fieldsets.length > 0) {
+        fieldsets.forEach(fs => {
+            const labels = fs.querySelectorAll('label[data-optname]');
+            let visibleCount = 0;
+            labels.forEach(lbl => {
+                const name = lbl.dataset.optname || '';
+                const match = !q || name.includes(q);
+                lbl.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+            let noMatch = fs.querySelector('.no-match-msg');
+            if (visibleCount === 0) {
+                if (!noMatch) {
+                    noMatch = document.createElement('div');
+                    noMatch.className = 'no-match-msg';
+                    noMatch.style.cssText = 'font-size:0.8em;color:#999;padding:2px 0';
+                    noMatch.textContent = '(no matching options)';
+                    fs.querySelector('div')?.appendChild(noMatch);
+                }
+            } else if (noMatch) {
+                noMatch.remove();
+            }
+        });
+    } else {
+        const labels = container.querySelectorAll('label[data-optname]');
         labels.forEach(lbl => {
             const name = lbl.dataset.optname || '';
-            const match = !q || name.includes(q);
-            lbl.style.display = match ? '' : 'none';
-            if (match) visibleCount++;
+            lbl.style.display = !q || name.includes(q) ? '' : 'none';
         });
-        let noMatch = fs.querySelector('.no-match-msg');
-        if (visibleCount === 0) {
-            if (!noMatch) {
-                noMatch = document.createElement('div');
-                noMatch.className = 'no-match-msg';
-                noMatch.style.cssText = 'font-size:0.8em;color:#999;padding:2px 0';
-                noMatch.textContent = '(no matching options)';
-                fs.querySelector('div')?.appendChild(noMatch);
-            }
-        } else if (noMatch) {
-            noMatch.remove();
-        }
-    });
+    }
 }
 
 // File System Access API: save image
