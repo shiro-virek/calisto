@@ -769,6 +769,15 @@ dropZone.addEventListener('drop', async (e) => {
             const name = file.name.replace(/\.[^/.]+$/, '').trim();
             if (!name) { errors++; continue; }
 
+            const existingSet = getExistingNormalizedNames();
+            const duplicates = findDuplicateNames(name, existingSet);
+            if (duplicates.length > 0) {
+                const msg = duplicates.length === 1
+                    ? `The name "${duplicates[0]}" already exists. Do you want to add it anyway?`
+                    : `The following names already exist: ${duplicates.map(d => `"${d}"`).join(', ')}. Do you want to add them anyway?`;
+                if (!confirm(msg)) { errors++; continue; }
+            }
+
             db.run("INSERT INTO entities (name) VALUES (?);", [name]);
             const newId = db.exec("SELECT last_insert_rowid();");
             const entityId = newId[0].values[0][0];
@@ -1532,6 +1541,28 @@ function updateTable() {
     }
 }
 
+function normalizeCompare(str) {
+    return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function getExistingNormalizedNames() {
+    const result = db.exec("SELECT name FROM entities");
+    if (!result.length) return new Set();
+    const set = new Set();
+    for (const row of result[0].values) {
+        const parts = row[0].split('|');
+        for (const part of parts) {
+            set.add(normalizeCompare(part));
+        }
+    }
+    return set;
+}
+
+function findDuplicateNames(inputName, existingSet) {
+    const parts = inputName.split('|').map(s => s.trim()).filter(s => s.length > 0);
+    return parts.filter(p => existingSet.has(normalizeCompare(p)));
+}
+
 // Action Trigger: Insert new text input records execution
 document.getElementById('insertBtn').addEventListener('click', () => {
     const nameInput = document.getElementById('nameInput');
@@ -1540,6 +1571,15 @@ document.getElementById('insertBtn').addEventListener('click', () => {
     if (!name) {
         alert("Please enter a name.");
         return;
+    }
+
+    const existingSet = getExistingNormalizedNames();
+    const duplicates = findDuplicateNames(name, existingSet);
+    if (duplicates.length > 0) {
+        const msg = duplicates.length === 1
+            ? `The name "${duplicates[0]}" already exists. Do you want to add it anyway?`
+            : `The following names already exist: ${duplicates.map(d => `"${d}"`).join(', ')}. Do you want to add them anyway?`;
+        if (!confirm(msg)) return;
     }
 
     db.run("INSERT INTO entities (name) VALUES (?);", [name]);
