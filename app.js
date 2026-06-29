@@ -1709,6 +1709,7 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
         loadConfiguration();
         renderFilters();
         updateTable();
+        document.getElementById('sidebar').classList.remove('open');
     };
     reader.readAsArrayBuffer(file);
 });
