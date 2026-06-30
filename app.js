@@ -53,6 +53,8 @@ let compactMode = false;
 let baseDirHandle = null;
 let imagesDirHandle = null;
 let uploadImageId = null;
+let currentPage = 1;
+let pageSize = 100;
 
 // Sidebar toggle
 document.getElementById('sidebarToggle').addEventListener('click', () => {
@@ -985,9 +987,9 @@ function renderFilters() {
 
     // Assign change/input listeners to refresh table values
     container.querySelectorAll('input, select').forEach(el => {
-        el.addEventListener('change', () => updateTable());
+        el.addEventListener('change', () => { currentPage = 1; updateTable(); });
         if (el.tagName === 'INPUT' && el.type === 'text') {
-            el.addEventListener('input', () => updateTable());
+            el.addEventListener('input', () => { currentPage = 1; updateTable(); });
         }
     });
 
@@ -997,6 +999,7 @@ function renderFilters() {
             const input = document.getElementById(btn.dataset.target);
             if (input) {
                 input.value = '';
+                currentPage = 1;
                 updateTable();
             }
         });
@@ -1176,10 +1179,6 @@ function updateTable() {
         // Apply filters
         const filters = getActiveFilters();
         rows = filterEntities(rows, filters);
-        if (rows.length === 0) {
-            container.innerHTML = '<em style="color:#999">No entities match the selected filters.</em>';
-            return;
-        }
 
         // Score Calculation setup
         const allFieldOpts = {};
@@ -1235,6 +1234,19 @@ function updateTable() {
                 return 0;
             });
         }
+
+        // Pagination
+        const totalFilteredRows = rows.length;
+        const totalPages = Math.ceil(totalFilteredRows / pageSize) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        const startIdx = (currentPage - 1) * pageSize;
+
+        if (totalFilteredRows === 0) {
+            container.innerHTML = '<em style="color:#999">No entities match the selected filters.</em>';
+            return;
+        }
+
+        rows = rows.slice(startIdx, startIdx + pageSize);
 
         const colNameIndex = columns.indexOf('name');
         const colImageIndex = columns.indexOf('image');
@@ -1342,6 +1354,35 @@ function updateTable() {
             html += '</tr>';
         });
         html += '</tbody></table>';
+
+        // Pagination bar
+        const startRow = startIdx + 1;
+        const endRow = Math.min(startIdx + pageSize, totalFilteredRows);
+        html += '<div class="pagination-bar">';
+        html += '<div class="pagination-info">Showing ' + startRow + '&ndash;' + endRow + ' of ' + totalFilteredRows + ' entities</div>';
+        html += '<div class="pagination-controls">';
+        html += '<button class="page-btn" data-page="prev"' + (currentPage <= 1 ? ' disabled' : '') + '>&#8249;</button>';
+        const pgRange = 2;
+        let pgStart = Math.max(1, currentPage - pgRange);
+        let pgEnd = Math.min(totalPages, currentPage + pgRange);
+        if (pgStart > 1) {
+            html += '<button class="page-btn" data-page="1">1</button>';
+            if (pgStart > 2) html += '<span class="page-ellipsis">&hellip;</span>';
+        }
+        for (let i = pgStart; i <= pgEnd; i++) {
+            html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" data-page="' + i + '">' + i + '</button>';
+        }
+        if (pgEnd < totalPages) {
+            if (pgEnd < totalPages - 1) html += '<span class="page-ellipsis">&hellip;</span>';
+            html += '<button class="page-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
+        }
+        html += '<button class="page-btn" data-page="next"' + (currentPage >= totalPages ? ' disabled' : '') + '>&#8250;</button>';
+        html += '</div>';
+        html += '<div class="pagination-size"><label>Rows per page: <select class="page-size-select">';
+        [50, 100, 200, 1000].forEach(function(s) {
+            html += '<option value="' + s + '"' + (s === pageSize ? ' selected' : '') + '>' + s + '</option>';
+        });
+        html += '</select></label></div></div>';
 
         container.innerHTML = html;
 
@@ -1614,7 +1655,8 @@ function updateTable() {
                     }
                     const ext = file.name.split('.').pop() || 'png';
                     const randomId = Math.random().toString(36).substring(2, 10);
-                    const filename = `${row.name}_${randomId}.${ext}`;
+                    const safeName = String(row.name).replace(/[\\/:*?"<>|]/g, '_').trim();
+                    const filename = `${safeName}_${randomId}.${ext}`;
                     const blob = new Blob([await file.arrayBuffer()], { type: file.type });
                     await saveImageFS(blob, filename);
                     db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, uid]);
@@ -1644,6 +1686,25 @@ function updateTable() {
                 }
             });
         });
+
+        // Pagination controls
+        container.querySelectorAll('.page-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const pg = this.dataset.page;
+                if (pg === 'prev') { if (currentPage > 1) currentPage--; }
+                else if (pg === 'next') { if (currentPage < totalPages) currentPage++; }
+                else { currentPage = parseInt(pg); }
+                updateTable();
+            });
+        });
+        const sizeSelect = container.querySelector('.page-size-select');
+        if (sizeSelect) {
+            sizeSelect.addEventListener('change', function() {
+                pageSize = parseInt(this.value);
+                currentPage = 1;
+                updateTable();
+            });
+        }
     } catch (e) {
         document.getElementById('tableContainer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
     }

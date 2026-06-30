@@ -106,3 +106,69 @@ pre {
 .filterable-list.compact { max-height:150px; }
 .filter-input { width:100%; box-sizing:border-box; padding:4px 6px; font-size:0.85em; border:1px solid #ddd; border-radius:3px; margin-bottom:4px; }
 .filter-input::placeholder { color:#aaa; }
+
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+}
+.pagination-info {
+    font-size: 0.85em;
+    color: #666;
+}
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 0.85em;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-weight: normal;
+}
+.page-btn:hover:not(:disabled):not(.active) {
+    background: #f0f0f0;
+    border-color: #bbb;
+}
+.page-btn.active {
+    background: #3498db;
+    color: #fff;
+    border-color: #3498db;
+    font-weight: bold;
+}
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+.page-ellipsis {
+    padding: 0 4px;
+    color: #999;
+    font-size: 0.9em;
+}
+.pagination-size {
+    font-size: 0.85em;
+    color: #666;
+}
+.pagination-size select {
+    padding: 4px 6px;
+    font-size: 0.85em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    margin-left: 4px;
+}
