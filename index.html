@@ -45,7 +45,7 @@
             <div class="card-body">
                 <p>Select the folder for images.</p>
                 <button id="pickDirBtn">📁 Select</button>
-                <span id="dirStatus" style="display:block;margin-top:4px;font-size:0.85em;color:#999;">None</span>
+                <span id="dirStatus" style="display:block;margin-top:4px;font-size:0.85em;color:#6c7086;">None</span>
             </div>
         </div>
 
@@ -76,12 +76,12 @@
 
     <div class="main-content">
 
-        <div class="card collapsed" id="dropZoneCard" style="border:2px dashed #3498db; background:#ebf5fb; text-align:center; cursor:pointer; margin-top:50px">
+        <div class="card collapsed" id="dropZoneCard" style="border:2px dashed #3498db; background:#252538; text-align:center; cursor:pointer; margin-top:50px">
             <h3>Drag & Drop Import</h3>
             <div class="card-body">
                 <p>Drag one or multiple images here to automatically create an entity for each one.</p>
-                <p style="font-size:0.9em;color:#666">The entity name will be taken from the file name (without extension).</p>
-                <div id="dropStatus" style="margin-top:8px;color:#999;font-size:0.9em">Drop images here</div>
+                <p style="font-size:0.9em;color:#a6adc8">The entity name will be taken from the file name (without extension).</p>
+                <div id="dropStatus" style="margin-top:8px;color:#6c7086;font-size:0.9em">Drop images here</div>
             </div>
         </div>
 
@@ -94,7 +94,7 @@
                         <tbody id="fieldsTableBody"></tbody>
                     </table>
                 </div>
-                <div style="border-top:1px solid #ddd;padding-top:10px;margin-top:6px">
+                <div style="border-top:1px solid #45475a;padding-top:10px;margin-top:6px">
                     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
                         <input type="text" id="newFieldFieldName" placeholder="Field name" style="flex:2">
                         <input type="text" id="newFieldDesc" placeholder="Description" style="flex:2">
@@ -105,7 +105,7 @@
                         </select>
                         <button id="addFieldBtn">➕ Add Field</button>
                     </div>
-                    <div id="fieldOptionsContainer" style="display:none;border:1px solid #ddd;padding:8px;border-radius:4px;margin-top:4px">
+                    <div id="fieldOptionsContainer" style="display:none;border:1px solid #45475a;padding:8px;border-radius:4px;margin-top:4px">
                         <strong>Field Options:</strong>
                         <div id="fieldOptionsContent" style="margin-top:4px"></div>
                     </div>
@@ -177,7 +177,7 @@
                         <input type="checkbox" id="compactToggle">
                         <span class="toggle-slider"></span>
                     </label>
-                    <span id="compactLabel" style="font-size:0.9em;color:#555">Compact Mode</span>
+                    <span id="compactLabel" style="font-size:0.9em;color:#a6adc8">Compact Mode</span>
                 </div>
                 <div id="tableContainer">No data loaded or table is empty.</div>
             </div>
@@ -185,7 +185,7 @@
 
     </div> <input type="file" id="imageInput" accept="image/*" style="display:none">
     <div id="imageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:20px; border-radius:8px; max-width:90%; max-height:90%;">
+        <div style="background:#2d2d3f; padding:20px; border-radius:8px; max-width:90%; max-height:90%;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
                 <strong id="modalEntityName" style="font-size:1.1em"></strong>
                 <button id="closeModalBtn">✖ Close</button>

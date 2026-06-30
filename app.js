@@ -422,7 +422,7 @@ function renderTagCheckboxes(selectedIds = []) {
     const sorted = [...tagsList].sort((a, b) => a.name.localeCompare(b.name));
     let html = '<div style="display:flex;align-items:center;gap:4px">' +
         '<input type="text" class="filter-input" placeholder="Filter tags..." oninput="filterOptions(this)" style="flex:1">' +
-        '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button></div>';
+        '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button></div>';
     html += '<div class="filterable-list compact">';
     sorted.forEach(e => {
         const checked = selectedIds.includes(e.id) ? 'checked' : '';
@@ -629,7 +629,7 @@ function renderFieldInputs(savedValues = {}) {
     if (customFieldsList.length === 0) return;
     let html = '<div style="display:flex;align-items:center;gap:4px">' +
         '<input type="text" class="filter-input" placeholder="Filter option values..." oninput="filterFieldOptions(this)" style="flex:1">' +
-        '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button></div>';
+        '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button></div>';
     html += '<div class="filterable-list">';
     [...customFieldsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
         if (c.type === 'text') {
@@ -641,7 +641,7 @@ function renderFieldInputs(savedValues = {}) {
             const opts = getFieldOptions(c.id);
             const isMulti = c.type === 'multi_list';
             const saved = savedValues[c.id] ? (Array.isArray(savedValues[c.id]) ? savedValues[c.id] : String(savedValues[c.id]).split(',').filter(Boolean)) : [];
-            html += `<fieldset style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;margin:0 0 6px 0">
+            html += `<fieldset style="border:1px solid #45475a;border-radius:4px;padding:4px 8px;margin:0 0 6px 0">
                 <legend style="font-size:0.85em">${c.name} ${isMulti ? '(multiple)' : ''}</legend>
                 <div style="display:flex;flex-wrap:wrap;gap:4px">`;
             opts.forEach(o => {
@@ -661,7 +661,7 @@ function renderFieldInputs(savedValues = {}) {
             if (!isMulti && opts.length > 0) {
                 const hasChecked = opts.some(o => saved.includes(String(o.id)));
                 if (!hasChecked) {
-                    html += `<label data-optname="(none)" style="font-size:0.85em;white-space:nowrap;color:#999">
+                    html += `<label data-optname="(none)" style="font-size:0.85em;white-space:nowrap;color:#6c7086">
                         <input type="radio" class="field-input-radio" name="field_radio_${c.id}" data-field-id="${c.id}" data-opt-id="" checked> (none)
                     </label>`;
                 }
@@ -899,7 +899,7 @@ function renderFilters() {
     html += `<div class="filter-group"><h4>Name</h4>
         <div style="display:flex;align-items:center;gap:4px">
             <input type="text" id="filterName" placeholder="Search name..." value="${fn}" style="flex:1">
-            <button class="clear-filter-btn" data-target="filterName" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button>
+            <button class="clear-filter-btn" data-target="filterName" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button>
         </div></div>`;
 
     // Features filters
@@ -929,7 +929,7 @@ function renderFilters() {
         html += '<div class="filter-group"><h4>Tags</h4>';
         html += '<div style="display:flex;align-items:center;gap:4px">' +
             '<input type="text" class="filter-input" placeholder="Filter tags..." oninput="filterOptions(this)" style="flex:1">' +
-            '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button></div>';
+            '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button></div>';
         html += '<div class="filterable-list compact">';
         [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
             const chkId = `filter_tag_${e.id}`;
@@ -952,14 +952,14 @@ function renderFilters() {
                 const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
                 html += `<div style="display:flex;align-items:center;gap:4px">
                     <input type="text" id="${inpId}" placeholder="Filter..." value="${cur}" style="flex:1">
-                    <button class="clear-filter-btn" data-target="${inpId}" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button>
+                    <button class="clear-filter-btn" data-target="${inpId}" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button>
                 </div>`;
             } else {
                 const opts = getFieldOptions(c.id);
                 const isMulti = c.type === 'multi_list';
                         html += '<div style="display:flex;align-items:center;gap:4px">' +
                             '<input type="text" class="filter-input" placeholder="Filter options..." oninput="filterFieldOptions(this)" style="flex:1">' +
-                            '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button></div>';
+                            '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button></div>';
                 html += '<div class="filterable-list compact">';
                 const cur = document.getElementById(inpId) ? document.getElementById(inpId).value : '';
                 const curIds = cur ? cur.split(',').map(Number) : [];
@@ -1145,14 +1145,14 @@ function updateTable() {
         }
 
         // Fetch entity tags
-        const tagRes = db.exec(`SELECT ut.entity_id, e.name, e.factor
+        const tagRes = db.exec(`SELECT ut.entity_id, e.name, e.factor, e.description
             FROM entity_tags ut JOIN tags e ON ut.tag_id = e.id;`);
         const userTags = {};
         if (tagRes.length > 0) {
             tagRes[0].values.forEach(r => {
                 const uid = r[0];
                 if (!userTags[uid]) userTags[uid] = [];
-                userTags[uid].push({ name: r[1], factor: r[2] });
+                userTags[uid].push({ name: r[1], factor: r[2], description: r[3] });
             });
         }
 
@@ -1242,7 +1242,7 @@ function updateTable() {
         const startIdx = (currentPage - 1) * pageSize;
 
         if (totalFilteredRows === 0) {
-            container.innerHTML = '<em style="color:#999">No entities match the selected filters.</em>';
+            container.innerHTML = '<em style="color:#6c7086">No entities match the selected filters.</em>';
             return;
         }
 
@@ -1304,7 +1304,7 @@ function updateTable() {
                     html += `<span class="feature-badge" style="display:inline-block;margin:1px 4px 1px 0;padding:1px 6px;border-radius:3px;background:${color}20;color:${color};font-weight:bold;font-size:0.85em">${c.name}: ${c.value}</span>`;
                 });
             } else {
-                html += '<em style="font-size:0.85em;color:#999">—</em>';
+                html += '<em style="font-size:0.85em;color:#6c7086">—</em>';
             }
             html += '</td>';
             // Tags Column
@@ -1312,10 +1312,10 @@ function updateTable() {
             const tags = userTags[id] || [];
             if (tags.length > 0) {
                 tags.forEach(t => {
-                    html += `<span class="tag-badge">${t.name}</span>`;
+                    html += `<span class="tag-badge">${t.description || t.name}</span>`;
                 });
             } else {
-                html += '<em style="font-size:0.85em;color:#999">—</em>';
+                html += '<em style="font-size:0.85em;color:#6c7086">—</em>';
             }
             html += '</td>';
             // Custom Fields Column
@@ -1339,7 +1339,7 @@ function updateTable() {
                 });
             }
             if (!hasFieldVal) {
-                html += '<em style="color:#999">—</em>';
+                html += '<em style="color:#6c7086">—</em>';
             }
             html += '</td>';
             // Actions Column
@@ -1455,7 +1455,7 @@ function updateTable() {
                         }
                                 let chkHtml = '<div style="display:flex;align-items:center;gap:4px">' +
                                     '<input type="text" class="filter-input" placeholder="Filter tags..." oninput="filterOptions(this)" style="flex:1">' +
-                                    '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button></div>';
+                                    '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button></div>';
                                 chkHtml += '<div class="filterable-list compact">';
                         [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                             const checked = selIds.has(e.id) ? 'checked' : '';
@@ -1485,7 +1485,7 @@ function updateTable() {
                         }
                                 let fieldEditHtml = '<div style="display:flex;align-items:center;gap:4px">' +
                                     '<input type="text" class="filter-input" placeholder="Filter option values..." oninput="filterFieldOptions(this)" style="flex:1">' +
-                                    '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button></div>';
+                                    '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button></div>';
                                 fieldEditHtml += '<div class="filterable-list" style="max-height:250px">';
                         customFieldsList.forEach(c => {
                             if (c.type === 'text') {
@@ -1497,7 +1497,7 @@ function updateTable() {
                                 const opts = getFieldOptions(c.id);
                                 const isMulti = c.type === 'multi_list';
                                 const savedIds = saved[c.id] ? (Array.isArray(saved[c.id]) ? saved[c.id] : String(saved[c.id]).split(',').filter(Boolean)) : [];
-                                fieldEditHtml += `<fieldset style="border:1px solid #ddd;border-radius:3px;padding:2px 4px;margin:2px">
+                                fieldEditHtml += `<fieldset style="border:1px solid #45475a;border-radius:3px;padding:2px 4px;margin:2px">
                                     <legend style="font-size:0.8em">${c.name}</legend>`;
                                 opts.forEach(o => {
                                     const oid = String(o.id);
@@ -1706,7 +1706,7 @@ function updateTable() {
             });
         }
     } catch (e) {
-        document.getElementById('tableContainer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+        document.getElementById('tableContainer').innerHTML = `<p style="color:#e74c3c">Error: ${e.message}</p>`;
     }
 }
 
