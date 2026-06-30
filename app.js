@@ -55,6 +55,8 @@ let imagesDirHandle = null;
 let uploadImageId = null;
 let currentPage = 1;
 let pageSize = 100;
+let imageNavList = [];
+let imageNavIndex = -1;
 
 // Sidebar toggle
 document.getElementById('sidebarToggle').addEventListener('click', () => {
@@ -219,6 +221,40 @@ document.getElementById('imageModal').addEventListener('click', (e) => {
     }
 });
 
+function showImageModalByIndex(idx) {
+    const item = imageNavList[idx];
+    if (!item) return;
+    imageNavIndex = idx;
+    (async () => {
+        try {
+            const url = await getImageURL(item.file);
+            document.getElementById('modalImage').src = url;
+            document.getElementById('modalEntityName').textContent = item.name;
+            document.getElementById('imageModal').style.display = 'flex';
+        } catch (err) {
+            alert('Error loading image: ' + err.message);
+        }
+    })();
+}
+
+document.getElementById('prevImageBtn').addEventListener('click', () => {
+    if (imageNavList.length === 0) return;
+    imageNavIndex = (imageNavIndex - 1 + imageNavList.length) % imageNavList.length;
+    showImageModalByIndex(imageNavIndex);
+});
+
+document.getElementById('nextImageBtn').addEventListener('click', () => {
+    if (imageNavList.length === 0) return;
+    imageNavIndex = (imageNavIndex + 1) % imageNavList.length;
+    showImageModalByIndex(imageNavIndex);
+});
+
+document.getElementById('randomImageBtn').addEventListener('click', () => {
+    if (imageNavList.length === 0) return;
+    imageNavIndex = Math.floor(Math.random() * imageNavList.length);
+    showImageModalByIndex(imageNavIndex);
+});
+
 // CRUD Features
 let featuresList = [];
 
@@ -366,7 +402,7 @@ function renderTags() {
     tagsList.forEach(e => {
         const tr = document.createElement('tr');
         tr.dataset.id = e.id;
-        tr.innerHTML = `<td class="tag-name">${e.name}</td><td class="tag-factor">${e.factor !== null ? e.factor : '-'}</td>
+        tr.innerHTML = `<td class="tag-name">${e.description || e.name}</td><td class="tag-factor">${e.factor !== null ? e.factor : '-'}</td>
             <td class="tag-desc">${e.description || ''}</td>
             <td><button class="edit-tag-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
             <button class="del-tag-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
@@ -428,7 +464,7 @@ function renderTagCheckboxes(selectedIds = []) {
         const checked = selectedIds.includes(e.id) ? 'checked' : '';
         html += `<label class="tag-check" data-name="${e.name.toLowerCase()}">
             <input type="checkbox" class="tag-checkbox" data-tag-id="${e.id}" ${checked}>
-            ${e.name}
+            ${e.description || e.name}
         </label>`;
     });
     html += '</div>';
@@ -934,7 +970,7 @@ function renderFilters() {
         [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
             const chkId = `filter_tag_${e.id}`;
             const checked = document.getElementById(chkId) ? document.getElementById(chkId).checked : false;
-            html += `<label data-name="${e.name.toLowerCase()}"><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.name}</label><br>`;
+            html += `<label data-name="${e.name.toLowerCase()}"><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.description || e.name}</label><br>`;
         });
         html += '</div></div>';
     }
@@ -1235,6 +1271,10 @@ function updateTable() {
             });
         }
 
+        // Build image navigation list from filtered+sorted rows
+        imageNavList = rows.filter(r => r[2]).map(r => ({ id: r[0], name: r[1], file: r[2] }));
+        imageNavIndex = -1;
+
         // Pagination
         const totalFilteredRows = rows.length;
         const totalPages = Math.ceil(totalFilteredRows / pageSize) || 1;
@@ -1461,7 +1501,7 @@ function updateTable() {
                             const checked = selIds.has(e.id) ? 'checked' : '';
                             chkHtml += `<label data-name="${e.name.toLowerCase()}" style="font-size:0.85em;white-space:nowrap;display:block">
                                 <input type="checkbox" class="tag-edit-check" data-tag-id="${e.id}" ${checked}>
-                                ${e.name}
+                                ${e.description || e.name}
                             </label>`;
                         });
                         chkHtml += '</div>';
@@ -1599,14 +1639,22 @@ function updateTable() {
 
         // Assign events to image viewer buttons
         container.querySelectorAll('.view-img-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                try {
-                    const url = await getImageURL(btn.dataset.file);
-                    document.getElementById('modalImage').src = url;
-                    document.getElementById('modalEntityName').textContent = btn.dataset.name;
-                    document.getElementById('imageModal').style.display = 'flex';
-                } catch (err) {
-                    alert('Error loading image: ' + err.message);
+            btn.addEventListener('click', () => {
+                const idx = imageNavList.findIndex(item => item.file === btn.dataset.file);
+                if (idx !== -1) {
+                    showImageModalByIndex(idx);
+                } else {
+                    // Fallback: open directly
+                    (async () => {
+                        try {
+                            const url = await getImageURL(btn.dataset.file);
+                            document.getElementById('modalImage').src = url;
+                            document.getElementById('modalEntityName').textContent = btn.dataset.name;
+                            document.getElementById('imageModal').style.display = 'flex';
+                        } catch (err) {
+                            alert('Error loading image: ' + err.message);
+                        }
+                    })();
                 }
             });
         });
@@ -1675,14 +1723,21 @@ function updateTable() {
                     img.src = url;
                 } catch (_) {}
             })();
-            img.addEventListener('click', async () => {
-                try {
-                    const url = await getImageURL(img.dataset.file);
-                    document.getElementById('modalImage').src = url;
-                    document.getElementById('modalEntityName').textContent = img.dataset.name;
-                    document.getElementById('imageModal').style.display = 'flex';
-                } catch (err) {
-                    alert('Error loading image: ' + err.message);
+            img.addEventListener('click', () => {
+                const idx = imageNavList.findIndex(item => item.file === img.dataset.file);
+                if (idx !== -1) {
+                    showImageModalByIndex(idx);
+                } else {
+                    (async () => {
+                        try {
+                            const url = await getImageURL(img.dataset.file);
+                            document.getElementById('modalImage').src = url;
+                            document.getElementById('modalEntityName').textContent = img.dataset.name;
+                            document.getElementById('imageModal').style.display = 'flex';
+                        } catch (err) {
+                            alert('Error loading image: ' + err.message);
+                        }
+                    })();
                 }
             });
         });
