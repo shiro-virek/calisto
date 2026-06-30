@@ -22,7 +22,10 @@ initSqlJs(config).then(function(sqlModule){
     db.run("CREATE TABLE IF NOT EXISTS custom_fields (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, description TEXT, type TEXT CHECK(type IN ('text','single_list','multi_list')));");
     db.run("CREATE TABLE IF NOT EXISTS field_options (id INTEGER PRIMARY KEY AUTOINCREMENT, field_id INTEGER REFERENCES custom_fields(id), value TEXT, factor REAL);");
     db.run("CREATE TABLE IF NOT EXISTS entity_field_value (entity_id INTEGER, field_id INTEGER, value TEXT, PRIMARY KEY (entity_id, field_id));");
+    db.run("CREATE TABLE IF NOT EXISTS entity_field_value_multi (entity_id INTEGER, field_id INTEGER, option_id INTEGER, PRIMARY KEY (entity_id, field_id, option_id));");
     db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
+
+    migrateMultiFieldValues();
 
     // Insert default feature
     const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
@@ -539,6 +542,7 @@ function renderCustomFields() {
             if (!confirm('Delete this field? Connected choices and values will also be deleted.')) return;
             const id = parseInt(btn.closest('tr').dataset.id);
             db.run("DELETE FROM entity_field_value WHERE field_id = ?;", [id]);
+            db.run("DELETE FROM entity_field_value_multi WHERE field_id = ?;", [id]);
             db.run("DELETE FROM field_options WHERE field_id = ?;", [id]);
             db.run("DELETE FROM custom_fields WHERE id = ?;", [id]);
             loadCustomFields();
@@ -634,7 +638,7 @@ function renderFieldInputs(savedValues = {}) {
         } else {
             const opts = getFieldOptions(c.id);
             const isMulti = c.type === 'multi_list';
-            const saved = savedValues[c.id] ? savedValues[c.id].split(',').filter(Boolean) : [];
+            const saved = savedValues[c.id] ? (Array.isArray(savedValues[c.id]) ? savedValues[c.id] : String(savedValues[c.id]).split(',').filter(Boolean)) : [];
             html += `<fieldset style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;margin:0 0 6px 0">
                 <legend style="font-size:0.85em">${c.name} ${isMulti ? '(multiple)' : ''}</legend>
                 <div style="display:flex;flex-wrap:wrap;gap:4px">`;
@@ -667,6 +671,31 @@ function renderFieldInputs(savedValues = {}) {
     container.innerHTML = html;
 }
 
+function migrateMultiFieldValues() {
+    const res = db.exec(`
+        SELECT efv.entity_id, efv.field_id, efv.value
+        FROM entity_field_value efv
+        JOIN custom_fields cf ON efv.field_id = cf.id
+        WHERE cf.type = 'multi_list' AND efv.value IS NOT NULL AND efv.value != '';
+    `);
+    if (res.length > 0 && res[0].values.length > 0) {
+        const stmt = db.prepare("INSERT OR IGNORE INTO entity_field_value_multi (entity_id, field_id, option_id) VALUES (?, ?, ?);");
+        res[0].values.forEach(r => {
+            const eid = r[0], fid = r[1], val = String(r[2]);
+            val.split(',').forEach(s => {
+                const optId = parseInt(s.trim());
+                if (!isNaN(optId)) {
+                    stmt.bind([eid, fid, optId]);
+                    stmt.step();
+                    stmt.reset();
+                }
+            });
+        });
+        stmt.free();
+        db.run("DELETE FROM entity_field_value WHERE field_id IN (SELECT id FROM custom_fields WHERE type = 'multi_list');");
+    }
+}
+
 function getCustomFieldValues() {
     const vals = {};
     document.querySelectorAll('.field-input-text').forEach(inp => {
@@ -682,16 +711,28 @@ function getCustomFieldValues() {
         if (!vals[cid]) vals[cid] = [];
         if (chk.checked) vals[cid].push(chk.dataset.optId);
     });
-    for (const [k, v] of Object.entries(vals)) {
-        if (Array.isArray(v)) vals[k] = v.join(',');
-    }
     return vals;
 }
 
 function saveFieldValues(entityId, values) {
     for (const [fieldId, value] of Object.entries(values)) {
-        db.run("INSERT OR REPLACE INTO entity_field_value (entity_id, field_id, value) VALUES (?, ?, ?);",
-            [entityId, parseInt(fieldId), value]);
+        if (Array.isArray(value)) {
+            const fid = parseInt(fieldId);
+            db.run("DELETE FROM entity_field_value_multi WHERE entity_id = ? AND field_id = ?;", [entityId, fid]);
+            value.forEach(optId => {
+                const id = parseInt(optId);
+                if (!isNaN(id)) {
+                    db.run("INSERT INTO entity_field_value_multi (entity_id, field_id, option_id) VALUES (?, ?, ?);",
+                        [entityId, fid, id]);
+                }
+            });
+        } else if (value === '') {
+            db.run("DELETE FROM entity_field_value WHERE entity_id = ? AND field_id = ?;",
+                [entityId, parseInt(fieldId)]);
+        } else {
+            db.run("INSERT OR REPLACE INTO entity_field_value (entity_id, field_id, value) VALUES (?, ?, ?);",
+                [entityId, parseInt(fieldId), value]);
+        }
     }
 }
 
@@ -1000,6 +1041,15 @@ function filterEntities(rows, filters) {
             fieldMap[r[0]][r[1]] = r[2];
         });
     }
+    const multiRes = db.exec("SELECT entity_id, field_id, option_id FROM entity_field_value_multi;");
+    if (multiRes.length > 0) {
+        multiRes[0].values.forEach(r => {
+            const eid = r[0], fid = r[1], oid = r[2];
+            if (!fieldMap[eid]) fieldMap[eid] = {};
+            if (!fieldMap[eid][fid]) fieldMap[eid][fid] = [];
+            fieldMap[eid][fid].push(String(oid));
+        });
+    }
 
     return rows.filter(row => {
         const uid = row[0];
@@ -1089,6 +1139,15 @@ function updateTable() {
                 const uid = r[0];
                 if (!userFieldVals[uid]) userFieldVals[uid] = {};
                 userFieldVals[uid][r[1]] = r[2];
+            });
+        }
+        const multiValRes = db.exec("SELECT entity_id, field_id, option_id FROM entity_field_value_multi;");
+        if (multiValRes.length > 0) {
+            multiValRes[0].values.forEach(r => {
+                const uid = r[0], fid = r[1], oid = r[2];
+                if (!userFieldVals[uid]) userFieldVals[uid] = {};
+                if (!userFieldVals[uid][fid]) userFieldVals[uid][fid] = [];
+                userFieldVals[uid][fid].push(String(oid));
             });
         }
 
@@ -1238,7 +1297,7 @@ function updateTable() {
                             html += `<div><strong>${c.name}:</strong> ${v}</div>`;
                         } else {
                             const opts = getFieldOptions(c.id);
-                            const selectedIds = v.split(',').filter(Boolean);
+                            const selectedIds = Array.isArray(v) ? v : String(v).split(',').filter(Boolean);
                             const labels = opts.filter(o => selectedIds.includes(String(o.id))).map(o => o.value);
                             html += `<div><strong>${c.name}:</strong> ${labels.join(', ') || '—'}</div>`;
                         }
@@ -1353,6 +1412,14 @@ function updateTable() {
                         if (cv.length > 0) {
                             cv[0].values.forEach(r => { saved[r[0]] = r[1]; });
                         }
+                        const multiCv = db.exec("SELECT field_id, option_id FROM entity_field_value_multi WHERE entity_id = ?;", [parseInt(id)]);
+                        if (multiCv.length > 0) {
+                            multiCv[0].values.forEach(r => {
+                                const fid = r[0];
+                                if (!saved[fid]) saved[fid] = [];
+                                saved[fid].push(String(r[1]));
+                            });
+                        }
                                 let fieldEditHtml = '<div style="display:flex;align-items:center;gap:4px">' +
                                     '<input type="text" class="filter-input" placeholder="Filter option values..." oninput="filterFieldOptions(this)" style="flex:1">' +
                                     '<button class="clear-filter-btn" style="padding:2px 6px;font-size:0.8em;background:#ccc;margin:0">✖</button></div>';
@@ -1366,7 +1433,7 @@ function updateTable() {
                             } else {
                                 const opts = getFieldOptions(c.id);
                                 const isMulti = c.type === 'multi_list';
-                                const savedIds = saved[c.id] ? saved[c.id].split(',').filter(Boolean) : [];
+                                const savedIds = saved[c.id] ? (Array.isArray(saved[c.id]) ? saved[c.id] : String(saved[c.id]).split(',').filter(Boolean)) : [];
                                 fieldEditHtml += `<fieldset style="border:1px solid #ddd;border-radius:3px;padding:2px 4px;margin:2px">
                                     <legend style="font-size:0.8em">${c.name}</legend>`;
                                 opts.forEach(o => {
@@ -1429,10 +1496,24 @@ function updateTable() {
                             if (!fieldVals[cid]) fieldVals[cid] = [];
                             if (chk.checked) fieldVals[cid].push(chk.dataset.optId);
                         });
+                        const eid = parseInt(id);
                         for (const [k, v] of Object.entries(fieldVals)) {
-                            const val = Array.isArray(v) ? v.join(',') : v;
-                            db.run("INSERT OR REPLACE INTO entity_field_value (entity_id, field_id, value) VALUES (?, ?, ?);",
-                                [parseInt(id), parseInt(k), val]);
+                            const fid = parseInt(k);
+                            if (Array.isArray(v)) {
+                                db.run("DELETE FROM entity_field_value_multi WHERE entity_id = ? AND field_id = ?;", [eid, fid]);
+                                v.forEach(optId => {
+                                    const oid = parseInt(optId);
+                                    if (!isNaN(oid)) {
+                                        db.run("INSERT INTO entity_field_value_multi (entity_id, field_id, option_id) VALUES (?, ?, ?);",
+                                            [eid, fid, oid]);
+                                    }
+                                });
+                            } else if (v === '') {
+                                db.run("DELETE FROM entity_field_value WHERE entity_id = ? AND field_id = ?;", [eid, fid]);
+                            } else {
+                                db.run("INSERT OR REPLACE INTO entity_field_value (entity_id, field_id, value) VALUES (?, ?, ?);",
+                                    [eid, fid, v]);
+                            }
                         }
                     }
 
@@ -1471,6 +1552,7 @@ function updateTable() {
                 db.run("DELETE FROM entity_features WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entity_tags WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entity_field_value WHERE entity_id = ?;", [id]);
+                db.run("DELETE FROM entity_field_value_multi WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entities WHERE id = ?;", [id]);
                 updateTable();
             });
@@ -1605,6 +1687,7 @@ document.getElementById('insertBtn').addEventListener('click', () => {
 // Trigger Action: Delete existing table entries
 document.getElementById('clearBtn').addEventListener('click', () => {
     db.run("DELETE FROM entity_field_value;");
+    db.run("DELETE FROM entity_field_value_multi;");
     db.run("DELETE FROM entity_tags;");
     db.run("DELETE FROM entity_features;");
     db.run("DELETE FROM entities;");
@@ -1693,7 +1776,9 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
         db.run("CREATE TABLE IF NOT EXISTS custom_fields (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, description TEXT, type TEXT CHECK(type IN ('text','single_list','multi_list')));");
         db.run("CREATE TABLE IF NOT EXISTS field_options (id INTEGER PRIMARY KEY AUTOINCREMENT, field_id INTEGER REFERENCES custom_fields(id), value TEXT, factor REAL);");
         db.run("CREATE TABLE IF NOT EXISTS entity_field_value (entity_id INTEGER, field_id INTEGER, value TEXT, PRIMARY KEY (entity_id, field_id));");
+        db.run("CREATE TABLE IF NOT EXISTS entity_field_value_multi (entity_id INTEGER, field_id INTEGER, option_id INTEGER, PRIMARY KEY (entity_id, field_id, option_id));");
         db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
+        migrateMultiFieldValues();
         const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
         if (featuresCount.length === 0 || featuresCount[0].values[0][0] === 0) {
             db.run("INSERT INTO features (name, factor) VALUES ('Height', 1.0);");
