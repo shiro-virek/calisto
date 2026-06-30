@@ -25,7 +25,7 @@ initSqlJs(config).then(function(sqlModule){
     db.run("CREATE TABLE IF NOT EXISTS entity_field_value_multi (entity_id INTEGER, field_id INTEGER, option_id INTEGER, PRIMARY KEY (entity_id, field_id, option_id));");
     db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
 
-    migrateMultiFieldValues();
+    migrateFieldValues();
 
     // Insert default feature
     const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
@@ -671,16 +671,36 @@ function renderFieldInputs(savedValues = {}) {
     container.innerHTML = html;
 }
 
-function migrateMultiFieldValues() {
-    const res = db.exec(`
+function migrateFieldValues() {
+    const stmt = db.prepare("INSERT OR IGNORE INTO entity_field_value_multi (entity_id, field_id, option_id) VALUES (?, ?, ?);");
+    // Migrate single_list values from entity_field_value to entity_field_value_multi
+    const singleRes = db.exec(`
+        SELECT efv.entity_id, efv.field_id, efv.value
+        FROM entity_field_value efv
+        JOIN custom_fields cf ON efv.field_id = cf.id
+        WHERE cf.type = 'single_list' AND efv.value IS NOT NULL AND efv.value != '';
+    `);
+    if (singleRes.length > 0 && singleRes[0].values.length > 0) {
+        singleRes[0].values.forEach(r => {
+            const eid = r[0], fid = r[1], val = String(r[2]);
+            const optId = parseInt(val.trim());
+            if (!isNaN(optId)) {
+                stmt.bind([eid, fid, optId]);
+                stmt.step();
+                stmt.reset();
+            }
+        });
+        db.run("DELETE FROM entity_field_value WHERE field_id IN (SELECT id FROM custom_fields WHERE type = 'single_list');");
+    }
+    // Migrate multi_list values from entity_field_value to entity_field_value_multi
+    const multiRes = db.exec(`
         SELECT efv.entity_id, efv.field_id, efv.value
         FROM entity_field_value efv
         JOIN custom_fields cf ON efv.field_id = cf.id
         WHERE cf.type = 'multi_list' AND efv.value IS NOT NULL AND efv.value != '';
     `);
-    if (res.length > 0 && res[0].values.length > 0) {
-        const stmt = db.prepare("INSERT OR IGNORE INTO entity_field_value_multi (entity_id, field_id, option_id) VALUES (?, ?, ?);");
-        res[0].values.forEach(r => {
+    if (multiRes.length > 0 && multiRes[0].values.length > 0) {
+        multiRes[0].values.forEach(r => {
             const eid = r[0], fid = r[1], val = String(r[2]);
             val.split(',').forEach(s => {
                 const optId = parseInt(s.trim());
@@ -691,9 +711,9 @@ function migrateMultiFieldValues() {
                 }
             });
         });
-        stmt.free();
         db.run("DELETE FROM entity_field_value WHERE field_id IN (SELECT id FROM custom_fields WHERE type = 'multi_list');");
     }
+    stmt.free();
 }
 
 function getCustomFieldValues() {
@@ -703,7 +723,9 @@ function getCustomFieldValues() {
     });
     document.querySelectorAll('.field-input-radio:checked').forEach(inp => {
         if (inp.dataset.optId) {
-            vals[parseInt(inp.dataset.fieldId)] = inp.dataset.optId;
+            const cid = parseInt(inp.dataset.fieldId);
+            if (!vals[cid]) vals[cid] = [];
+            vals[cid].push(inp.dataset.optId);
         }
     });
     document.querySelectorAll('.field-input-chk').forEach(chk => {
@@ -1489,7 +1511,11 @@ function updateTable() {
                             fieldVals[parseInt(inp.dataset.fieldId)] = inp.value;
                         });
                         fieldCell.querySelectorAll('.field-edit-radio:checked').forEach(inp => {
-                            if (inp.dataset.optId) fieldVals[parseInt(inp.dataset.fieldId)] = inp.dataset.optId;
+                            if (inp.dataset.optId) {
+                                const cid = parseInt(inp.dataset.fieldId);
+                                if (!fieldVals[cid]) fieldVals[cid] = [];
+                                fieldVals[cid].push(inp.dataset.optId);
+                            }
                         });
                         fieldCell.querySelectorAll('.field-edit-chk').forEach(chk => {
                             const cid = parseInt(chk.dataset.fieldId);
@@ -1778,7 +1804,7 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
         db.run("CREATE TABLE IF NOT EXISTS entity_field_value (entity_id INTEGER, field_id INTEGER, value TEXT, PRIMARY KEY (entity_id, field_id));");
         db.run("CREATE TABLE IF NOT EXISTS entity_field_value_multi (entity_id INTEGER, field_id INTEGER, option_id INTEGER, PRIMARY KEY (entity_id, field_id, option_id));");
         db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
-        migrateMultiFieldValues();
+        migrateFieldValues();
         const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
         if (featuresCount.length === 0 || featuresCount[0].values[0][0] === 0) {
             db.run("INSERT INTO features (name, factor) VALUES ('Height', 1.0);");
