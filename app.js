@@ -1813,6 +1813,9 @@ document.getElementById('insertBtn').addEventListener('click', () => {
     saveFieldValues(entityId, fieldVals);
 
     nameInput.value = '';
+    renderFeatureInputs();
+    renderTagCheckboxes();
+    renderFieldInputs();
     updateTable();
 });
 
