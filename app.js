@@ -45,6 +45,7 @@ initSqlJs(config).then(function(sqlModule){
     renderFilters();
     updateTable();
     loadConfiguration();
+    setTimeout(() => document.body.classList.remove('loading'), 200);
 }).catch(err => console.error("Error initializing sql.js:", err));
 
 let sortColumn = null;
@@ -1880,6 +1881,8 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    document.getElementById('loadingSpinner').style.display = 'flex';
+
     const reader = new FileReader();
     reader.onload = function() {
         const Uints = new Uint8Array(reader.result);
@@ -1915,6 +1918,7 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
         renderFilters();
         updateTable();
         document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('loadingSpinner').style.display = 'none';
     };
     reader.readAsArrayBuffer(file);
 });
