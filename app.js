@@ -1009,7 +1009,21 @@ function renderFilters() {
         html += '</div></div>';
     }
 
+    html += '<div style="flex:1 1 100%;margin-top:8px"><button id="clearAllFiltersBtn" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer">✖ Clear all filters</button></div>';
+
     container.innerHTML = html;
+
+    document.getElementById('clearAllFiltersBtn').addEventListener('click', () => {
+        container.querySelectorAll('input, select').forEach(el => {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.checked = false;
+            } else {
+                el.value = '';
+            }
+        });
+        currentPage = 1;
+        updateTable();
+    });
 
     // Assign change/input listeners to refresh table values
     container.querySelectorAll('input, select').forEach(el => {
@@ -1817,6 +1831,13 @@ document.getElementById('insertBtn').addEventListener('click', () => {
     renderTagCheckboxes();
     renderFieldInputs();
     updateTable();
+});
+
+document.getElementById('clearInsertBtn').addEventListener('click', () => {
+    document.getElementById('nameInput').value = '';
+    renderFeatureInputs();
+    renderTagCheckboxes();
+    renderFieldInputs();
 });
 
 // Trigger Action: Delete existing table entries
