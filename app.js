@@ -392,7 +392,7 @@ function renderTags() {
     tagsList.forEach(e => {
         const tr = document.createElement('tr');
         tr.dataset.id = e.id;
-        tr.innerHTML = `<td class="tag-name">${e.description || e.name}</td><td class="tag-factor">${e.factor !== null ? e.factor : '-'}</td>
+        tr.innerHTML = `<td class="tag-name">${e.name}</td><td class="tag-factor">${e.factor !== null ? e.factor : '-'}</td>
             <td class="tag-desc">${e.description || ''}</td>
             <td><button class="edit-tag-btn" style="padding:2px 6px;font-size:0.85em">✏️</button>
             <button class="del-tag-btn" style="padding:2px 6px;font-size:0.85em;background-color:#e74c3c;">✖</button></td>`;
