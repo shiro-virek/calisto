@@ -464,7 +464,7 @@ function renderTagCheckboxes(selectedIds = []) {
     html += '<div class="filterable-list compact">';
     sorted.forEach(e => {
         const checked = selectedIds.includes(e.id) ? 'checked' : '';
-        html += `<label class="tag-check" data-name="${e.name.toLowerCase()}">
+        html += `<label class="tag-check" data-name="${(e.name + ' ' + (e.description || '')).toLowerCase()}">
             <input type="checkbox" class="tag-checkbox" data-tag-id="${e.id}" ${checked}>
             ${e.description || e.name}
         </label>`;
@@ -960,7 +960,7 @@ function renderFilters() {
         [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
             const chkId = `filter_tag_${e.id}`;
             const checked = document.getElementById(chkId) ? document.getElementById(chkId).checked : false;
-            html += `<label data-name="${e.name.toLowerCase()}"><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.description || e.name}</label><br>`;
+            html += `<label data-name="${(e.name + ' ' + (e.description || '')).toLowerCase()}"><input type="checkbox" id="${chkId}" ${checked ? 'checked' : ''}> ${e.description || e.name}</label><br>`;
         });
         html += '</div></div>';
     }
@@ -1489,7 +1489,7 @@ function updateTable() {
                                 chkHtml += '<div class="filterable-list compact">';
                         [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                             const checked = selIds.has(e.id) ? 'checked' : '';
-                            chkHtml += `<label data-name="${e.name.toLowerCase()}" style="font-size:0.85em;white-space:nowrap;display:block">
+                            chkHtml += `<label data-name="${(e.name + ' ' + (e.description || '')).toLowerCase()}" style="font-size:0.85em;white-space:nowrap;display:block">
                                 <input type="checkbox" class="tag-edit-check" data-tag-id="${e.id}" ${checked}>
                                 ${e.description || e.name}
                             </label>`;
