@@ -252,6 +252,17 @@ document.getElementById('randomImageBtn').addEventListener('click', () => {
     showImageModalByIndex(imageNavIndex);
 });
 
+document.addEventListener('keydown', (e) => {
+    if (document.getElementById('imageModal').style.display !== 'flex') return;
+    if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        document.getElementById('prevImageBtn').click();
+    } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        document.getElementById('nextImageBtn').click();
+    }
+});
+
 // CRUD Features
 let featuresList = [];
 
