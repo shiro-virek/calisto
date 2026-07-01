@@ -215,11 +215,7 @@ document.getElementById('imageInput').addEventListener('change', async function(
 document.getElementById('closeModalBtn').addEventListener('click', () => {
     document.getElementById('imageModal').style.display = 'none';
 });
-document.getElementById('imageModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-        document.getElementById('imageModal').style.display = 'none';
-    }
-});
+
 
 function showImageModalByIndex(idx) {
     const item = imageNavList[idx];
@@ -345,13 +341,7 @@ document.getElementById('closeFeaturesBtn').addEventListener('click', () => {
     loadFeatures();
     updateTable();
 });
-document.getElementById('featuresModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-        document.getElementById('featuresModal').style.display = 'none';
-        loadFeatures();
-        updateTable();
-    }
-});
+
 document.getElementById('addFeatureBtn').addEventListener('click', () => {
     const name = document.getElementById('newFeatureFieldName').value.trim();
     const factor = document.getElementById('newFeatureFactor').value.trim();
@@ -480,13 +470,7 @@ document.getElementById('closeTagsBtn').addEventListener('click', () => {
     loadTags();
     updateTable();
 });
-document.getElementById('tagsModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-        document.getElementById('tagsModal').style.display = 'none';
-        loadTags();
-        updateTable();
-    }
-});
+
 document.getElementById('addTagBtn').addEventListener('click', () => {
     const name = document.getElementById('newTagFieldName').value.trim().toUpperCase();
     const factor = document.getElementById('newTagFactor').value.trim();
@@ -808,13 +792,7 @@ document.getElementById('closeFieldsBtn').addEventListener('click', () => {
     loadCustomFields();
     updateTable();
 });
-document.getElementById('fieldsModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-        document.getElementById('fieldsModal').style.display = 'none';
-        loadCustomFields();
-        updateTable();
-    }
-});
+
 document.getElementById('addFieldBtn').addEventListener('click', () => {
     const name = document.getElementById('newFieldFieldName').value.trim();
     const description = document.getElementById('newFieldDesc').value.trim();
