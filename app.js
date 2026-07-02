@@ -1349,7 +1349,11 @@ function updateTable() {
         const indicScore = sortColumn === -1 ? (sortAsc ? ' ▲' : ' ▼') : '';
         html += `<th data-col="-1" style="cursor:pointer">Score${indicScore}</th>`;
         if (!compactMode) {
-            html += '<th>Features</th><th>Tags</th><th>Custom Fields</th><th>Actions</th>';
+            html += '<th>Features</th><th>Tags</th><th>Custom Fields</th>';
+            const colDateIndex = columns.indexOf('date');
+            const dateIndicator = sortColumn === colDateIndex ? (sortAsc ? ' ▲' : ' ▼') : '';
+            html += `<th data-col="${colDateIndex}" style="cursor:pointer;font-size:0.9em">Date${dateIndicator}</th>`;
+            html += '<th>Actions</th>';
         }
         html += '</tr></thead><tbody>';
 
@@ -1426,6 +1430,15 @@ function updateTable() {
                 html += '<em style="color:#6c7086">—</em>';
             }
             html += '</td>';
+            // Date Column
+            const colDateIndex = columns.indexOf('date');
+            const dateVal = row[colDateIndex];
+            if (dateVal) {
+                const parts = dateVal.split(' ');
+                html += `<td style="font-size:0.75em;line-height:1.4;text-align:center;vertical-align:middle;white-space:nowrap"><div>${parts[0] || ''}</div><div>${parts[1] || ''}</div></td>`;
+            } else {
+                html += '<td style="font-size:0.75em;text-align:center;color:#6c7086">—</td>';
+            }
             // Actions Column
             html += '<td style="display:flex;flex-direction:column;gap:4px">';
             html += `<button class="edit-btn" data-id="${id}">✏️ Edit</button>`;
