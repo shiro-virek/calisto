@@ -1543,7 +1543,7 @@ function updateTable() {
                                 chkHtml += '<div class="filterable-list compact">';
                         [...tagsList].sort((a, b) => a.name.localeCompare(b.name)).forEach(e => {
                             const checked = selIds.has(e.id) ? 'checked' : '';
-                            chkHtml += `<label data-name="${(e.name + ' ' + (e.description || '')).toLowerCase()}" style="font-size:0.85em;white-space:nowrap;display:block">
+                            chkHtml += `<label data-name="${(e.name + ' ' + (e.description || '')).toLowerCase()}" class="tag-edit-label" style="font-size:0.85em;white-space:nowrap">
                                 <input type="checkbox" class="tag-edit-check" data-tag-id="${e.id}" ${checked}>
                                 ${e.description || e.name}
                             </label>`;
