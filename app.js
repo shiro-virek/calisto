@@ -59,6 +59,18 @@ let pageSize = 100;
 let imageNavList = [];
 let imageNavIndex = -1;
 
+function showNotification(message, type) {
+    const container = document.getElementById('notificationContainer');
+    const el = document.createElement('div');
+    el.className = 'notification ' + type;
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => {
+        el.classList.add('fade-out');
+        setTimeout(() => el.remove(), 300);
+    }, 3000);
+}
+
 // Sidebar toggle
 document.getElementById('sidebarToggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
@@ -204,6 +216,7 @@ document.getElementById('imageInput').addEventListener('change', async function(
         await saveImageFS(blob, filename);
         db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, uploadImageId]);
         updateTable();
+        showNotification('Entity "' + currentName + '" image updated', 'warning');
     } catch (err) {
         alert('Error uploading image: ' + err.message);
     }
@@ -308,17 +321,21 @@ function renderFeatures() {
                     [newName, newFactor ? parseFloat(newFactor) : null, id]);
                 loadFeatures();
                 updateTable();
+                showNotification('Feature "' + newName + '" updated', 'warning');
             }
         });
     });
     document.querySelectorAll('.del-feature-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!confirm('Delete this feature?')) return;
-            const id = parseInt(btn.closest('tr').dataset.id);
+            const tr = btn.closest('tr');
+            const name = tr.querySelector('.feature-name').textContent;
+            const id = parseInt(tr.dataset.id);
             db.run("DELETE FROM entity_features WHERE feature_id = ?;", [id]);
             db.run("DELETE FROM features WHERE id = ?;", [id]);
             loadFeatures();
             updateTable();
+            showNotification('Feature "' + name + '" deleted', 'error');
         });
     });
 }
@@ -363,6 +380,7 @@ document.getElementById('addFeatureBtn').addEventListener('click', () => {
         document.getElementById('newFeatureFieldName').value = '';
         document.getElementById('newFeatureFactor').value = '';
         loadFeatures();
+        showNotification('Feature "' + name + '" created', 'success');
     } catch (e) {
         alert('Error: ' + e.message);
     }
@@ -435,17 +453,21 @@ function renderTags() {
                     [newName, newFactor ? parseFloat(newFactor) : null, newDesc || null, id]);
                 loadTags();
                 updateTable();
+                showNotification('Tag "' + newName + '" updated', 'warning');
             }
         });
     });
     document.querySelectorAll('.del-tag-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!confirm('Delete this tag?')) return;
-            const id = parseInt(btn.closest('tr').dataset.id);
+            const tr = btn.closest('tr');
+            const name = tr.querySelector('.tag-name').textContent;
+            const id = parseInt(tr.dataset.id);
             db.run("DELETE FROM entity_tags WHERE tag_id = ?;", [id]);
             db.run("DELETE FROM tags WHERE id = ?;", [id]);
             loadTags();
             updateTable();
+            showNotification('Tag "' + name + '" deleted', 'error');
         });
     });
 }
@@ -498,6 +520,7 @@ document.getElementById('addTagBtn').addEventListener('click', () => {
         document.getElementById('newTagFactor').value = '';
         document.getElementById('newTagDesc').value = '';
         loadTags();
+        showNotification('Tag "' + name + '" created', 'success');
     } catch (e) {
         alert('Error: ' + e.message);
     }
@@ -568,19 +591,23 @@ function renderCustomFields() {
                     [newName, newDesc || null, id]);
                 loadCustomFields();
                 updateTable();
+                showNotification('Custom field "' + newName + '" updated', 'warning');
             }
         });
     });
     document.querySelectorAll('.del-field-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!confirm('Delete this field? Connected choices and values will also be deleted.')) return;
-            const id = parseInt(btn.closest('tr').dataset.id);
+            const tr = btn.closest('tr');
+            const name = tr.querySelector('.field-name').textContent;
+            const id = parseInt(tr.dataset.id);
             db.run("DELETE FROM entity_field_value WHERE field_id = ?;", [id]);
             db.run("DELETE FROM entity_field_value_multi WHERE field_id = ?;", [id]);
             db.run("DELETE FROM field_options WHERE field_id = ?;", [id]);
             db.run("DELETE FROM custom_fields WHERE id = ?;", [id]);
             loadCustomFields();
             updateTable();
+            showNotification('Custom field "' + name + '" deleted', 'error');
         });
     });
     document.querySelectorAll('.opt-field-btn').forEach(btn => {
@@ -621,6 +648,7 @@ function showFieldOptions(fieldId) {
         document.getElementById('newOptFactor').value = '';
         showFieldOptions(editingFieldOptionsId);
         loadCustomFields();
+        showNotification('Option "' + value + '" created', 'success');
     });
 
     document.querySelectorAll('.edit-opt-btn').forEach(btn => {
@@ -641,16 +669,20 @@ function showFieldOptions(fieldId) {
                     [newVal, newFactor ? parseFloat(newFactor) : null, id]);
                 showFieldOptions(editingFieldOptionsId);
                 loadCustomFields();
+                showNotification('Option "' + newVal + '" updated', 'warning');
             }
         });
     });
 
     document.querySelectorAll('.del-opt-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            const id = parseInt(btn.closest('tr').dataset.id);
+            const tr = btn.closest('tr');
+            const val = tr.querySelector('.opt-val').textContent;
+            const id = parseInt(tr.dataset.id);
             db.run("DELETE FROM field_options WHERE id = ?;", [id]);
             showFieldOptions(editingFieldOptionsId);
             loadCustomFields();
+            showNotification('Option "' + val + '" deleted', 'error');
         });
     });
 }
@@ -815,6 +847,7 @@ document.getElementById('addFieldBtn').addEventListener('click', () => {
         document.getElementById('newFieldFieldName').value = '';
         document.getElementById('newFieldDesc').value = '';
         loadCustomFields();
+        showNotification('Custom field "' + name + '" created', 'success');
     } catch (e) {
         alert('Error: ' + e.message);
     }
@@ -902,6 +935,13 @@ dropZone.addEventListener('drop', async (e) => {
 
     updateTable();
     const msg = `✅ ${created} entity(ies) created` + (errors > 0 ? `, ${errors} error(s)` : '');
+    if (created === 1) {
+        // Find the name from the last created file
+        const lastFile = files.find(f => f.name.replace(/\.[^/.]+$/, '').trim());
+        if (lastFile) showNotification('Entity "' + lastFile.name.replace(/\.[^/.]+$/, '').trim() + '" created', 'success');
+    } else if (created > 1) {
+        showNotification(created + ' entities created', 'success');
+    }
     document.getElementById('dropStatus').textContent = msg;
     document.getElementById('dropStatus').style.color = errors > 0 ? '#e67e22' : '#2ecc71';
     setTimeout(() => {
@@ -1629,6 +1669,7 @@ function updateTable() {
                     }
 
                     updateTable();
+                    showNotification('Entity "' + newName + '" updated', 'warning');
                 }
             });
         });
@@ -1668,12 +1709,15 @@ function updateTable() {
             btn.addEventListener('click', () => {
                 if (!confirm('Delete this entity?')) return;
                 const id = parseInt(btn.dataset.id);
+                const nameTd = container.querySelector('td.editable[data-id="' + id + '"]');
+                const entityName = nameTd ? nameTd.textContent : 'Unknown';
                 db.run("DELETE FROM entity_features WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entity_tags WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entity_field_value WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entity_field_value_multi WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entities WHERE id = ?;", [id]);
                 updateTable();
+                showNotification('Entity "' + entityName + '" deleted', 'error');
             });
         });
 
@@ -1713,6 +1757,7 @@ function updateTable() {
                     await saveImageFS(blob, filename);
                     db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, uid]);
                     updateTable();
+                    showNotification('Entity "' + row.name + '" image updated', 'warning');
                 } catch (err) {
                     alert('Error: ' + err.message);
                 }
@@ -1831,6 +1876,7 @@ document.getElementById('insertBtn').addEventListener('click', () => {
     renderTagCheckboxes();
     renderFieldInputs();
     updateTable();
+    showNotification('Entity "' + name + '" created', 'success');
 });
 
 document.getElementById('clearInsertBtn').addEventListener('click', () => {
@@ -1848,6 +1894,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     db.run("DELETE FROM entity_features;");
     db.run("DELETE FROM entities;");
     updateTable();
+    showNotification('All entities deleted', 'error');
 });
 
 // EXPORT ACTION: Generate .sqlite database package file directly
