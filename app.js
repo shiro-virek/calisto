@@ -14,7 +14,7 @@ initSqlJs(config).then(function(sqlModule){
     db = new SQL.Database();
 
     // Create tables
-    db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+        db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
     db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
     db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
     db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
@@ -214,7 +214,7 @@ document.getElementById('imageInput').addEventListener('change', async function(
         const blob = new Blob([await file.arrayBuffer()], { type: file.type });
 
         await saveImageFS(blob, filename);
-        db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, uploadImageId]);
+        db.run("UPDATE entities SET image = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [filename, uploadImageId]);
         updateTable();
         showNotification('Entity "' + currentName + '" image updated', 'warning');
     } catch (err) {
@@ -924,7 +924,7 @@ dropZone.addEventListener('drop', async (e) => {
             const filename = `${name}_${randomId}.${ext}`;
             const blob = new Blob([await file.arrayBuffer()], { type: file.type });
             await saveImageFS(blob, filename);
-            db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, entityId]);
+            db.run("UPDATE entities SET image = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [filename, entityId]);
 
             created++;
         } catch (err) {
@@ -1623,7 +1623,7 @@ function updateTable() {
                         alert("Name field cannot be left blank.");
                         return;
                     }
-                    db.run("UPDATE entities SET name = ? WHERE id = ?;", [newName, id]);
+                    db.run("UPDATE entities SET name = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [newName, id]);
 
                     // Store features data structures modifications
                     const selects = featureCell ? featureCell.querySelectorAll('.feature-edit-select') : [];
@@ -1768,7 +1768,7 @@ function updateTable() {
                     const filename = `${safeName}_${randomId}.${ext}`;
                     const blob = new Blob([await file.arrayBuffer()], { type: file.type });
                     await saveImageFS(blob, filename);
-                    db.run("UPDATE entities SET image = ? WHERE id = ?;", [filename, uid]);
+                    db.run("UPDATE entities SET image = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [filename, uid]);
                     updateTable();
                     showNotification('Entity "' + row.name + '" image updated', 'warning');
                 } catch (err) {
@@ -1986,7 +1986,7 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
 
         db = new SQL.Database(Uints);
 
-        db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+    db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
         db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
         db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
         db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
