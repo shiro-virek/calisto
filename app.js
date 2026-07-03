@@ -1342,7 +1342,7 @@ function updateTable() {
                 html += '<th>Image</th>';
                 return;
             }
-            if (col === 'id' || col === 'date') return;
+            if (col === 'id' || col === 'date' || col === 'modified_at') return;
             const indicator = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
             html += `<th data-col="${i}" style="cursor:pointer">${col.charAt(0).toUpperCase() + col.slice(1)}${indicator}</th>`;
         });
@@ -1353,6 +1353,9 @@ function updateTable() {
             const colDateIndex = columns.indexOf('date');
             const dateIndicator = sortColumn === colDateIndex ? (sortAsc ? ' ▲' : ' ▼') : '';
             html += `<th data-col="${colDateIndex}" style="cursor:pointer;font-size:0.9em">Date${dateIndicator}</th>`;
+            const colModAtIndex = columns.indexOf('modified_at');
+            const modAtIndicator = sortColumn === colModAtIndex ? (sortAsc ? ' ▲' : ' ▼') : '';
+            html += `<th data-col="${colModAtIndex}" style="cursor:pointer;font-size:0.9em">Modified at${modAtIndicator}</th>`;
             html += '<th>Actions</th>';
         }
         html += '</tr></thead><tbody>';
@@ -1365,7 +1368,7 @@ function updateTable() {
             row.forEach((cell, i) => {
                 const colName = columns[i];
                 if (compactMode && colName !== 'name' && colName !== 'image') return;
-                if (colName === 'id' || colName === 'date') return;
+                if (colName === 'id' || colName === 'date' || colName === 'modified_at') return;
                 if (colName === 'image') {
                     if (cell) {
                         html += `<td><img class="img-thumb view-img" data-file="${cell}" data-name="${row[colNameIndex]}" src="" title="${cell}"></td>`;
@@ -1435,6 +1438,15 @@ function updateTable() {
             const dateVal = row[colDateIndex];
             if (dateVal) {
                 const parts = dateVal.split(' ');
+                html += `<td style="font-size:0.75em;line-height:1.4;text-align:center;vertical-align:middle;white-space:nowrap"><div>${parts[0] || ''}</div><div>${parts[1] || ''}</div></td>`;
+            } else {
+                html += '<td style="font-size:0.75em;text-align:center;color:#6c7086">—</td>';
+            }
+            // Modified At Column
+            const colModAtIndex = columns.indexOf('modified_at');
+            const modAtVal = row[colModAtIndex];
+            if (modAtVal) {
+                const parts = modAtVal.split(' ');
                 html += `<td style="font-size:0.75em;line-height:1.4;text-align:center;vertical-align:middle;white-space:nowrap"><div>${parts[0] || ''}</div><div>${parts[1] || ''}</div></td>`;
             } else {
                 html += '<td style="font-size:0.75em;text-align:center;color:#6c7086">—</td>';
