@@ -1693,6 +1693,49 @@ function updateTable() {
                         fieldEditHtml += '</div></div>';
                         fieldCell.innerHTML = fieldEditHtml;
                     }
+
+                    // Image cell - show thumbnails with delete buttons
+                    const tr = btn.closest('tr');
+                    const imgCell = tr.querySelector('td img.view-img')?.closest('td');
+                    if (imgCell) {
+                        const imgRes = db.exec("SELECT image, image_2, image_3 FROM entities WHERE id = ?;", [parseInt(id)]);
+                        const images = imgRes.length > 0 ? imgRes[0].values[0] : [null, null, null];
+                        const cols = ['image', 'image_2', 'image_3'];
+                        let imgHtml = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+                        cols.forEach((col, i) => {
+                            const file = images[i];
+                            imgHtml += '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">';
+                            if (file) {
+                                imgHtml += `<img class="img-thumb edit-img-thumb" data-file="${file}" src="" style="width:50px;height:50px">`;
+                                imgHtml += `<button class="del-edit-img-btn" data-col="${col}" data-file="${file}" style="padding:1px 5px;font-size:0.7em;background-color:#e74c3c;color:white;border:none;border-radius:3px;cursor:pointer;line-height:1.4">✖</button>`;
+                            } else {
+                                imgHtml += '<div style="width:50px;height:50px;border:1px dashed #585b70;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.65em;color:#6c7086">empty</div>';
+                            }
+                            imgHtml += '</div>';
+                        });
+                        imgHtml += '</div>';
+                        imgCell.innerHTML = imgHtml;
+                        imgCell.querySelectorAll('.edit-img-thumb').forEach(img => {
+                            (async () => {
+                                try { img.src = await getImageURL(img.dataset.file); } catch (_) {}
+                            })();
+                        });
+                        imgCell.querySelectorAll('.del-edit-img-btn').forEach(delBtn => {
+                            delBtn.addEventListener('click', async () => {
+                                if (!confirm('Delete this image?')) return;
+                                const col = delBtn.dataset.col;
+                                const file = delBtn.dataset.file;
+                                try {
+                                    await deleteImageFS(file);
+                                    db.run(`UPDATE entities SET ${col} = NULL, modified_at = CURRENT_TIMESTAMP WHERE id = ?;`, [parseInt(id)]);
+                                    updateTable();
+                                    showNotification('Image deleted', 'error');
+                                } catch (err) {
+                                    alert('Error deleting image: ' + err.message);
+                                }
+                            });
+                        });
+                    }
                 } else {
                     const input = td.querySelector('.edit-input');
                     const newName = input.value.trim();
