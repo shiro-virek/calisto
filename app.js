@@ -14,7 +14,7 @@ initSqlJs(config).then(function(sqlModule){
     db = new SQL.Database();
 
     // Create tables
-        db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+        db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, image_2 TEXT, image_3 TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
     db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
     db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
     db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
@@ -191,7 +191,7 @@ document.getElementById('imageInput').addEventListener('change', async function(
             return;
         }
 
-        const stmt = db.prepare("SELECT name, image FROM entities WHERE id = ?");
+        const stmt = db.prepare("SELECT name, image, image_2, image_3 FROM entities WHERE id = ?");
         stmt.bind([uploadImageId]);
         if (!stmt.step()) {
             alert('Record not found.');
@@ -202,11 +202,6 @@ document.getElementById('imageInput').addEventListener('change', async function(
         stmt.free();
 
         const currentName = row.name;
-        const currentImage = row.image;
-
-        if (currentImage) {
-            await deleteImageFS(currentImage);
-        }
 
         const ext = file.name.split('.').pop() || 'png';
         const randomId = Math.random().toString(36).substring(2, 10);
@@ -214,7 +209,19 @@ document.getElementById('imageInput').addEventListener('change', async function(
         const blob = new Blob([await file.arrayBuffer()], { type: file.type });
 
         await saveImageFS(blob, filename);
-        db.run("UPDATE entities SET image = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [filename, uploadImageId]);
+
+        let col;
+        let oldFile = null;
+        if (!row.image) {
+            col = 'image';
+        } else if (!row.image_2) {
+            col = 'image_2';
+        } else {
+            col = 'image_3';
+            if (row.image_3) oldFile = row.image_3;
+        }
+        if (oldFile) await deleteImageFS(oldFile);
+        db.run(`UPDATE entities SET ${col} = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;`, [filename, uploadImageId]);
         updateTable();
         showNotification('Entity "' + currentName + '" image updated', 'warning');
     } catch (err) {
@@ -235,16 +242,41 @@ function showImageModalByIndex(idx) {
     const item = imageNavList[idx];
     if (!item) return;
     imageNavIndex = idx;
-    (async () => {
-        try {
-            const url = await getImageURL(item.file);
-            document.getElementById('modalImage').src = url;
-            document.getElementById('modalEntityName').textContent = item.name;
-            document.getElementById('imageModal').style.display = 'flex';
-        } catch (err) {
-            alert('Error loading image: ' + err.message);
-        }
-    })();
+    document.getElementById('modalEntityName').textContent = item.name;
+    document.getElementById('imageModal').style.display = 'flex';
+
+    const modalImg = document.getElementById('modalImage');
+    const thumbContainer = document.getElementById('modalThumbnails');
+    thumbContainer.innerHTML = '';
+
+    function setActiveImage(index) {
+        if (!item.files[index]) return;
+        (async () => {
+            try {
+                const url = await getImageURL(item.files[index]);
+                modalImg.src = url;
+                thumbContainer.querySelectorAll('.modal-thumb').forEach((t, i) => {
+                    t.classList.toggle('active', i === index);
+                });
+            } catch (err) {
+                alert('Error loading image: ' + err.message);
+            }
+        })();
+    }
+
+    item.files.forEach((file, i) => {
+        const thumb = document.createElement('img');
+        thumb.className = 'modal-thumb' + (i === 0 ? ' active' : '');
+        thumb.addEventListener('click', () => setActiveImage(i));
+        thumbContainer.appendChild(thumb);
+        (async () => {
+            try {
+                thumb.src = await getImageURL(file);
+            } catch (_) {}
+        })();
+    });
+
+    setActiveImage(0);
 }
 
 document.getElementById('prevImageBtn').addEventListener('click', () => {
@@ -1315,8 +1347,19 @@ function updateTable() {
             });
         }
 
+        const colNameIndex = columns.indexOf('name');
+        const colImageIndex = columns.indexOf('image');
+        const colImage2Index = columns.indexOf('image_2');
+        const colImage3Index = columns.indexOf('image_3');
+
         // Build image navigation list from filtered+sorted rows
-        imageNavList = rows.filter(r => r[2]).map(r => ({ id: r[0], name: r[1], file: r[2] }));
+        imageNavList = rows
+            .filter(r => r[colImageIndex] || r[colImage2Index] || r[colImage3Index])
+            .map(r => ({
+                id: r[0],
+                name: r[1],
+                files: [r[colImageIndex], r[colImage2Index], r[colImage3Index]].filter(Boolean)
+            }));
         imageNavIndex = -1;
 
         // Pagination
@@ -1332,9 +1375,6 @@ function updateTable() {
 
         rows = rows.slice(startIdx, startIdx + pageSize);
 
-        const colNameIndex = columns.indexOf('name');
-        const colImageIndex = columns.indexOf('image');
-
         let html = '<table><thead><tr>';
         columns.forEach((col, i) => {
             if (compactMode && col !== 'name' && col !== 'image') return;
@@ -1342,7 +1382,7 @@ function updateTable() {
                 html += '<th>Image</th>';
                 return;
             }
-            if (col === 'id' || col === 'date' || col === 'modified_at') return;
+            if (col === 'id' || col === 'date' || col === 'modified_at' || col === 'image_2' || col === 'image_3') return;
             const indicator = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
             html += `<th data-col="${i}" style="cursor:pointer">${col.charAt(0).toUpperCase() + col.slice(1)}${indicator}</th>`;
         });
@@ -1368,10 +1408,10 @@ function updateTable() {
             row.forEach((cell, i) => {
                 const colName = columns[i];
                 if (compactMode && colName !== 'name' && colName !== 'image') return;
-                if (colName === 'id' || colName === 'date' || colName === 'modified_at') return;
+                if (colName === 'id' || colName === 'date' || colName === 'modified_at' || colName === 'image_2' || colName === 'image_3') return;
                 if (colName === 'image') {
                     if (cell) {
-                        html += `<td><img class="img-thumb view-img" data-file="${cell}" data-name="${row[colNameIndex]}" src="" title="${cell}"></td>`;
+                        html += `<td><img class="img-thumb view-img" data-id="${id}" data-file="${cell}" data-name="${row[colNameIndex]}" src="" title="${cell}"></td>`;
                     } else {
                         html += '<td><em>No image</em></td>';
                     }
@@ -1455,8 +1495,8 @@ function updateTable() {
             html += '<td style="display:flex;flex-direction:column;gap:4px">';
             html += `<button class="edit-btn" data-id="${id}">✏️ Edit</button>`;
             html += `<button class="img-btn upload-img" data-id="${id}" style="background-color:#e67e22;">🖼️ Upload</button>`;
-            if (filename) {
-                html += `<button class="img-btn view-img-btn" data-file="${filename}" data-name="${row[colNameIndex]}" style="background-color:#2ecc71;">👁️ View</button>`;
+            if (filename || row[colImage2Index] || row[colImage3Index]) {
+                html += `<button class="img-btn view-img-btn" data-id="${id}" style="background-color:#2ecc71;">👁️ View</button>`;
             }
             html += `<button class="del-entity-btn" data-id="${id}" style="background-color:#e74c3c;">🗑️ Delete</button>`;
             html += '</td>';
@@ -1710,21 +1750,10 @@ function updateTable() {
         // Assign events to image viewer buttons
         container.querySelectorAll('.view-img-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const idx = imageNavList.findIndex(item => item.file === btn.dataset.file);
+                const entityId = parseInt(btn.dataset.id);
+                const idx = imageNavList.findIndex(item => item.id === entityId);
                 if (idx !== -1) {
                     showImageModalByIndex(idx);
-                } else {
-                    // Fallback: open directly
-                    (async () => {
-                        try {
-                            const url = await getImageURL(btn.dataset.file);
-                            document.getElementById('modalImage').src = url;
-                            document.getElementById('modalEntityName').textContent = btn.dataset.name;
-                            document.getElementById('imageModal').style.display = 'flex';
-                        } catch (err) {
-                            alert('Error loading image: ' + err.message);
-                        }
-                    })();
                 }
             });
         });
@@ -1766,21 +1795,29 @@ function updateTable() {
                 }
                 const uid = parseInt(tr.dataset.id);
                 try {
-                    const stmt = db.prepare("SELECT name, image FROM entities WHERE id = ?");
+                    const stmt = db.prepare("SELECT name, image, image_2, image_3 FROM entities WHERE id = ?");
                     stmt.bind([uid]);
                     if (!stmt.step()) { stmt.free(); return; }
                     const row = stmt.getAsObject();
                     stmt.free();
-                    if (row.image) {
-                        try { await deleteImageFS(row.image); } catch (_) {}
-                    }
                     const ext = file.name.split('.').pop() || 'png';
                     const randomId = Math.random().toString(36).substring(2, 10);
                     const safeName = String(row.name).replace(/[\\/:*?"<>|]/g, '_').trim();
                     const filename = `${safeName}_${randomId}.${ext}`;
                     const blob = new Blob([await file.arrayBuffer()], { type: file.type });
                     await saveImageFS(blob, filename);
-                    db.run("UPDATE entities SET image = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [filename, uid]);
+                    let col;
+                    let oldFile = null;
+                    if (!row.image) {
+                        col = 'image';
+                    } else if (!row.image_2) {
+                        col = 'image_2';
+                    } else {
+                        col = 'image_3';
+                        if (row.image_3) oldFile = row.image_3;
+                    }
+                    if (oldFile) await deleteImageFS(oldFile);
+                    db.run(`UPDATE entities SET ${col} = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;`, [filename, uid]);
                     updateTable();
                     showNotification('Entity "' + row.name + '" image updated', 'warning');
                 } catch (err) {
@@ -1798,20 +1835,10 @@ function updateTable() {
                 } catch (_) {}
             })();
             img.addEventListener('click', () => {
-                const idx = imageNavList.findIndex(item => item.file === img.dataset.file);
+                const entityId = parseInt(img.dataset.id);
+                const idx = imageNavList.findIndex(item => item.id === entityId);
                 if (idx !== -1) {
                     showImageModalByIndex(idx);
-                } else {
-                    (async () => {
-                        try {
-                            const url = await getImageURL(img.dataset.file);
-                            document.getElementById('modalImage').src = url;
-                            document.getElementById('modalEntityName').textContent = img.dataset.name;
-                            document.getElementById('imageModal').style.display = 'flex';
-                        } catch (err) {
-                            alert('Error loading image: ' + err.message);
-                        }
-                    })();
                 }
             });
         });
@@ -1998,7 +2025,9 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
 
         db = new SQL.Database(Uints);
 
-    db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+    db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, image_2 TEXT, image_3 TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+        try { db.run("ALTER TABLE entities ADD COLUMN image_2 TEXT;"); } catch(e) {}
+        try { db.run("ALTER TABLE entities ADD COLUMN image_3 TEXT;"); } catch(e) {}
         db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
         db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
         db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
