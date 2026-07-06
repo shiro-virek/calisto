@@ -58,6 +58,7 @@ let currentPage = 1;
 let pageSize = 100;
 let imageNavList = [];
 let imageNavIndex = -1;
+let manualFilterMode = false;
 
 function showNotification(message, type) {
     const container = document.getElementById('notificationContainer');
@@ -992,6 +993,14 @@ function renderFilters() {
     const container = document.getElementById('filterContainer');
     let html = '';
 
+    html += '<div style="display:flex;align-items:center;gap:8px;flex:1 1 100%;margin-bottom:4px">' +
+        '<label class="compact-toggle" id="manualFilterToggleLabel">' +
+        '<input type="checkbox" id="manualFilterToggle"' + (manualFilterMode ? ' checked' : '') + '>' +
+        '<span class="toggle-slider"></span></label>' +
+        '<span style="font-size:0.9em;color:#a6adc8">Manual Filter</span>' +
+        '<div id="applyFilterContainer" style="display:' + (manualFilterMode ? 'inline-block' : 'none') + ';margin-left:8px">' +
+        '<button id="applyFiltersBtn" style="background:#2ecc71;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.85em">▶ Apply</button></div></div>';
+
     // Name filter
     const fn = document.getElementById('filterName') ? document.getElementById('filterName').value : '';
     html += `<div class="filter-group"><h4>Name</h4>
@@ -1085,6 +1094,13 @@ function renderFilters() {
 
     container.innerHTML = html;
 
+    // Manual filter toggle
+    document.getElementById('manualFilterToggle').addEventListener('change', function() {
+        manualFilterMode = this.checked;
+        renderFilters();
+        if (!manualFilterMode) updateTable();
+    });
+
     document.getElementById('clearAllFiltersBtn').addEventListener('click', () => {
         container.querySelectorAll('input, select').forEach(el => {
             if (el.type === 'checkbox' || el.type === 'radio') {
@@ -1099,11 +1115,20 @@ function renderFilters() {
 
     // Assign change/input listeners to refresh table values
     container.querySelectorAll('input, select').forEach(el => {
-        el.addEventListener('change', () => { currentPage = 1; updateTable(); });
+        el.addEventListener('change', () => { currentPage = 1; if (!manualFilterMode) updateTable(); });
         if (el.tagName === 'INPUT' && el.type === 'text') {
-            el.addEventListener('input', () => { currentPage = 1; updateTable(); });
+            el.addEventListener('input', () => { currentPage = 1; if (!manualFilterMode) updateTable(); });
         }
     });
+
+    // Apply Filters button (manual mode)
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+            currentPage = 1;
+            updateTable();
+        });
+    }
 
     // Clear filter text inputs
     container.querySelectorAll('.clear-filter-btn').forEach(btn => {
@@ -1112,7 +1137,7 @@ function renderFilters() {
             if (input) {
                 input.value = '';
                 currentPage = 1;
-                updateTable();
+                if (!manualFilterMode) updateTable();
             }
         });
     });
