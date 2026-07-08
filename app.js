@@ -58,7 +58,7 @@ let currentPage = 1;
 let pageSize = 100;
 let imageNavList = [];
 let imageNavIndex = -1;
-let manualFilterMode = false;
+let manualFilterMode = true;
 
 function showNotification(message, type) {
     const container = document.getElementById('notificationContainer');
@@ -991,23 +991,29 @@ const GRADE_COLORS = {
 // ─── Filters Rendering and Processing ─────────────────────
 function renderFilters() {
     const container = document.getElementById('filterContainer');
+    const alwaysContainer = document.getElementById('filterAlwaysVisible');
     let html = '';
+    let alwaysHtml = '';
 
-    html += '<div style="display:flex;align-items:center;gap:8px;flex:1 1 100%;margin-bottom:4px">' +
+    const fn = document.getElementById('filterName') ? document.getElementById('filterName').value : '';
+
+    alwaysHtml += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 100%">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
         '<label class="compact-toggle" id="manualFilterToggleLabel">' +
         '<input type="checkbox" id="manualFilterToggle"' + (manualFilterMode ? ' checked' : '') + '>' +
         '<span class="toggle-slider"></span></label>' +
-        '<span style="font-size:0.9em;color:#a6adc8">Manual Filter</span>' +
-        '<div id="applyFilterContainer" style="display:' + (manualFilterMode ? 'inline-block' : 'none') + ';margin-left:8px">' +
-        '<button id="applyFiltersBtn" style="background:#2ecc71;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.85em">▶ Apply</button></div></div>';
+        '<span style="font-size:0.9em;color:#a6adc8">Manual Filter</span></div>' +
 
-    // Name filter
-    const fn = document.getElementById('filterName') ? document.getElementById('filterName').value : '';
-    html += `<div class="filter-group"><h4>Name</h4>
-        <div style="display:flex;align-items:center;gap:4px">
-            <input type="text" id="filterName" placeholder="Search name..." value="${fn}" style="flex:1">
-            <button class="clear-filter-btn" data-target="filterName" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button>
-        </div></div>`;
+        '<div class="filter-group" style="margin:0"><h4>Name</h4>' +
+        '<div style="display:flex;align-items:center;gap:4px">' +
+        '<input type="text" id="filterName" placeholder="Search name..." value="' + fn + '" style="flex:1">' +
+        '<button class="clear-filter-btn" data-target="filterName" style="padding:2px 6px;font-size:0.8em;background:#585b70;color:#e0e0e0;margin:0">✖</button>' +
+        '</div></div>' +
+
+        '<div id="applyFilterContainer" style="display:' + (manualFilterMode ? 'inline-flex' : 'none') + ';align-items:center;gap:4px">' +
+        '<button id="applyFiltersBtn" style="background:#2ecc71;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.85em">▶ Apply</button>' +
+        '<button id="clearAllFiltersBtn" style="background:#e74c3c;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.85em">✖ Clear all filters</button>' +
+        '</div></div>';
 
     // Features filters
     if (featuresList.length > 0) {
@@ -1090,8 +1096,7 @@ function renderFilters() {
         html += '</div></div>';
     }
 
-    html += '<div style="flex:1 1 100%;margin-top:8px"><button id="clearAllFiltersBtn" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer">✖ Clear all filters</button></div>';
-
+    alwaysContainer.innerHTML = alwaysHtml;
     container.innerHTML = html;
 
     // Manual filter toggle
@@ -1102,6 +1107,13 @@ function renderFilters() {
     });
 
     document.getElementById('clearAllFiltersBtn').addEventListener('click', () => {
+        alwaysContainer.querySelectorAll('input, select').forEach(el => {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.checked = false;
+            } else {
+                el.value = '';
+            }
+        });
         container.querySelectorAll('input, select').forEach(el => {
             if (el.type === 'checkbox' || el.type === 'radio') {
                 el.checked = false;
@@ -1114,6 +1126,12 @@ function renderFilters() {
     });
 
     // Assign change/input listeners to refresh table values
+    alwaysContainer.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('change', () => { currentPage = 1; if (!manualFilterMode) updateTable(); });
+        if (el.tagName === 'INPUT' && el.type === 'text') {
+            el.addEventListener('input', () => { currentPage = 1; if (!manualFilterMode) updateTable(); });
+        }
+    });
     container.querySelectorAll('input, select').forEach(el => {
         el.addEventListener('change', () => { currentPage = 1; if (!manualFilterMode) updateTable(); });
         if (el.tagName === 'INPUT' && el.type === 'text') {
@@ -1131,6 +1149,16 @@ function renderFilters() {
     }
 
     // Clear filter text inputs
+    alwaysContainer.querySelectorAll('.clear-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.dataset.target);
+            if (input) {
+                input.value = '';
+                currentPage = 1;
+                if (!manualFilterMode) updateTable();
+            }
+        });
+    });
     container.querySelectorAll('.clear-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const input = document.getElementById(btn.dataset.target);
