@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define el puerto que deseas usar
-PORT=8000
+PORT=8500
 
 # Usa el directorio pasado como argumento, o el actual si no se provee ninguno
 TARGET_DIR="${1:-.}"
