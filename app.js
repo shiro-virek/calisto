@@ -14,7 +14,8 @@ initSqlJs(config).then(function(sqlModule){
     db = new SQL.Database();
 
     // Create tables
-        db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, image_2 TEXT, image_3 TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+        db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+    db.run("CREATE TABLE IF NOT EXISTS entity_images (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, filename TEXT);");
     db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
     db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
     db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
@@ -26,6 +27,7 @@ initSqlJs(config).then(function(sqlModule){
     db.run("CREATE TABLE IF NOT EXISTS configuration (key TEXT PRIMARY KEY, value TEXT);");
 
     migrateFieldValues();
+    migrateEntityImages();
 
     // Insert default feature
     const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
@@ -181,6 +183,50 @@ async function deleteImageFS(filename) {
     } catch (_) {}
 }
 
+// Entity images helpers (unlimited images in separate table)
+function getEntityImages(entityId) {
+    const res = db.exec("SELECT id, filename FROM entity_images WHERE entity_id = ? ORDER BY id;", [entityId]);
+    if (res.length === 0) return [];
+    return res[0].values.map(r => ({ id: r[0], filename: r[1] }));
+}
+
+function addEntityImage(entityId, filename) {
+    db.run("INSERT INTO entity_images (entity_id, filename) VALUES (?, ?);", [entityId, filename]);
+}
+
+function removeEntityImage(imageId) {
+    db.run("DELETE FROM entity_images WHERE id = ?;", [imageId]);
+}
+
+// Migrate legacy DBs: move image/image_2/image_3 columns into entity_images table
+function migrateEntityImages() {
+    try {
+        db.run("CREATE TABLE IF NOT EXISTS entity_images (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, filename TEXT);");
+        const entitiesHasImages = db.exec("SELECT COUNT(*) FROM pragma_table_info('entities') WHERE name IN ('image','image_2','image_3');");
+        const hasImageCols = entitiesHasImages.length > 0 && entitiesHasImages[0].values[0][0] > 0;
+        const entityImagesHasRows = (() => {
+            const r = db.exec("SELECT COUNT(*) FROM entity_images;");
+            return r.length > 0 && r[0].values[0][0] > 0;
+        })();
+        if (!hasImageCols || entityImagesHasRows) return;
+        const imageNav = db.exec("SELECT id, image, image_2, image_3 FROM entities WHERE image IS NOT NULL OR image_2 IS NOT NULL OR image_3 IS NOT NULL;");
+        if (imageNav.length === 0) return;
+        const stmt = db.prepare("INSERT INTO entity_images (entity_id, filename) VALUES (?, ?);");
+        imageNav[0].values.forEach(r => {
+            [r[1], r[2], r[3]].forEach(f => {
+                if (f) {
+                    stmt.bind([r[0], f]);
+                    stmt.step();
+                    stmt.reset();
+                }
+            });
+        });
+        stmt.free();
+    } catch (e) {
+        console.error('migrateEntityImages error:', e);
+    }
+}
+
 // Handle image upload from input
 document.getElementById('imageInput').addEventListener('change', async function(e) {
     const file = e.target.files[0];
@@ -192,7 +238,7 @@ document.getElementById('imageInput').addEventListener('change', async function(
             return;
         }
 
-        const stmt = db.prepare("SELECT name, image, image_2, image_3 FROM entities WHERE id = ?");
+        const stmt = db.prepare("SELECT name FROM entities WHERE id = ?");
         stmt.bind([uploadImageId]);
         if (!stmt.step()) {
             alert('Record not found.');
@@ -211,20 +257,10 @@ document.getElementById('imageInput').addEventListener('change', async function(
 
         await saveImageFS(blob, filename);
 
-        let col;
-        let oldFile = null;
-        if (!row.image) {
-            col = 'image';
-        } else if (!row.image_2) {
-            col = 'image_2';
-        } else {
-            col = 'image_3';
-            if (row.image_3) oldFile = row.image_3;
-        }
-        if (oldFile) await deleteImageFS(oldFile);
-        db.run(`UPDATE entities SET ${col} = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;`, [filename, uploadImageId]);
+        addEntityImage(uploadImageId, filename);
+        db.run("UPDATE entities SET modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [uploadImageId]);
         updateTable();
-        showNotification('Entity "' + currentName + '" image updated', 'warning');
+        showNotification('Entity "' + currentName + '" image added', 'warning');
     } catch (err) {
         alert('Error uploading image: ' + err.message);
     }
@@ -957,7 +993,8 @@ dropZone.addEventListener('drop', async (e) => {
             const filename = `${name}_${randomId}.${ext}`;
             const blob = new Blob([await file.arrayBuffer()], { type: file.type });
             await saveImageFS(blob, filename);
-            db.run("UPDATE entities SET image = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [filename, entityId]);
+            addEntityImage(entityId, filename);
+            db.run("UPDATE entities SET modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [entityId]);
 
             created++;
         } catch (err) {
@@ -1401,17 +1438,23 @@ function updateTable() {
         }
 
         const colNameIndex = columns.indexOf('name');
-        const colImageIndex = columns.indexOf('image');
-        const colImage2Index = columns.indexOf('image_2');
-        const colImage3Index = columns.indexOf('image_3');
+        // Build map of entity_id -> list of image files from entity_images table
+        const imgMapRes = db.exec("SELECT entity_id, filename FROM entity_images ORDER BY entity_id, id;");
+        const entityImageFiles = {};
+        if (imgMapRes.length > 0) {
+            imgMapRes[0].values.forEach(r => {
+                if (!entityImageFiles[r[0]]) entityImageFiles[r[0]] = [];
+                entityImageFiles[r[0]].push(r[1]);
+            });
+        }
 
         // Build image navigation list from filtered+sorted rows
         imageNavList = rows
-            .filter(r => r[colImageIndex] || r[colImage2Index] || r[colImage3Index])
+            .filter(r => (entityImageFiles[r[0]] || []).length > 0)
             .map(r => ({
                 id: r[0],
                 name: r[1],
-                files: [r[colImageIndex], r[colImage2Index], r[colImage3Index]].filter(Boolean)
+                files: entityImageFiles[r[0]] || []
             }));
         imageNavIndex = -1;
 
@@ -1429,9 +1472,11 @@ function updateTable() {
         rows = rows.slice(startIdx, startIdx + pageSize);
 
         let html = '<table><thead><tr>';
+        let hasImageHeader = false;
         columns.forEach((col, i) => {
             if (compactMode && col !== 'name' && col !== 'image') return;
             if (col === 'image') {
+                hasImageHeader = true;
                 html += '<th>Image</th>';
                 return;
             }
@@ -1439,6 +1484,7 @@ function updateTable() {
             const indicator = sortColumn === i ? (sortAsc ? ' ▲' : ' ▼') : '';
             html += `<th data-col="${i}" style="cursor:pointer">${col.charAt(0).toUpperCase() + col.slice(1)}${indicator}</th>`;
         });
+        if (!hasImageHeader) html += '<th>Image</th>';
         const indicScore = sortColumn === -1 ? (sortAsc ? ' ▲' : ' ▼') : '';
         html += `<th data-col="-1" style="cursor:pointer">Score${indicScore}</th>`;
         if (!compactMode) {
@@ -1455,21 +1501,22 @@ function updateTable() {
 
         rows.forEach(row => {
             const id = row[0];
-            const filename = row[colImageIndex] || null;
+            const files = entityImageFiles[id] || [];
             const features = userFeatures[id] || [];
             html += `<tr data-id="${id}" style="cursor:default">`;
+            const imageCell = files.length > 0
+                ? '<td style="display:flex;gap:4px;flex-wrap:wrap">' + files.map(f =>
+                    `<img class="img-thumb view-img" data-id="${id}" data-file="${f}" data-name="${row[colNameIndex]}" src="" title="${f}">`
+                ).join('') + '</td>'
+                : '<td><em>No image</em></td>';
             row.forEach((cell, i) => {
                 const colName = columns[i];
-                if (compactMode && colName !== 'name' && colName !== 'image') return;
+                if (compactMode && colName !== 'name') return;
                 if (colName === 'id' || colName === 'date' || colName === 'modified_at' || colName === 'image_2' || colName === 'image_3') return;
-                if (colName === 'image') {
-                    if (cell) {
-                        html += `<td><img class="img-thumb view-img" data-id="${id}" data-file="${cell}" data-name="${row[colNameIndex]}" src="" title="${cell}"></td>`;
-                    } else {
-                        html += '<td><em>No image</em></td>';
-                    }
-                } else if (i === colNameIndex) {
+                if (colName === 'image') return;
+                if (i === colNameIndex) {
                     html += `<td class="editable" data-id="${id}" data-col="${i}">${cell}</td>`;
+                    html += imageCell;
                 } else {
                     html += `<td>${cell}</td>`;
                 }
@@ -1548,7 +1595,7 @@ function updateTable() {
             html += '<td style="display:flex;flex-direction:column;gap:4px">';
             html += `<button class="edit-btn" data-id="${id}">✏️ Edit</button>`;
             html += `<button class="img-btn upload-img" data-id="${id}" style="background-color:#e67e22;">🖼️ Upload</button>`;
-            if (filename || row[colImage2Index] || row[colImage3Index]) {
+            if ((entityImageFiles[id] || []).length > 0) {
                 html += `<button class="img-btn view-img-btn" data-id="${id}" style="background-color:#2ecc71;">👁️ View</button>`;
             }
             html += `<button class="del-entity-btn" data-id="${id}" style="background-color:#e74c3c;">🗑️ Delete</button>`;
@@ -1726,19 +1773,15 @@ function updateTable() {
                     const tr = btn.closest('tr');
                     const imgCell = tr.querySelector('td img.view-img')?.closest('td');
                     if (imgCell) {
-                        const imgRes = db.exec("SELECT image, image_2, image_3 FROM entities WHERE id = ?;", [parseInt(id)]);
-                        const images = imgRes.length > 0 ? imgRes[0].values[0] : [null, null, null];
-                        const cols = ['image', 'image_2', 'image_3'];
+                        const editImgRows = getEntityImages(parseInt(id));
                         let imgHtml = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
-                        cols.forEach((col, i) => {
-                            const file = images[i];
+                        if (editImgRows.length === 0) {
+                            imgHtml += '<div style="width:50px;height:50px;border:1px dashed #585b70;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.65em;color:#6c7086">empty</div>';
+                        }
+                        editImgRows.forEach(er => {
                             imgHtml += '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">';
-                            if (file) {
-                                imgHtml += `<img class="img-thumb edit-img-thumb" data-file="${file}" src="" style="width:50px;height:50px">`;
-                                imgHtml += `<button class="del-edit-img-btn" data-col="${col}" data-file="${file}" style="padding:1px 5px;font-size:0.7em;background-color:#e74c3c;color:white;border:none;border-radius:3px;cursor:pointer;line-height:1.4">✖</button>`;
-                            } else {
-                                imgHtml += '<div style="width:50px;height:50px;border:1px dashed #585b70;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.65em;color:#6c7086">empty</div>';
-                            }
+                            imgHtml += `<img class="img-thumb edit-img-thumb" data-file="${er.filename}" src="" style="width:50px;height:50px">`;
+                            imgHtml += `<button class="del-edit-img-btn" data-img-id="${er.id}" data-file="${er.filename}" style="padding:1px 5px;font-size:0.7em;background-color:#e74c3c;color:white;border:none;border-radius:3px;cursor:pointer;line-height:1.4">✖</button>`;
                             imgHtml += '</div>';
                         });
                         imgHtml += '</div>';
@@ -1751,11 +1794,12 @@ function updateTable() {
                         imgCell.querySelectorAll('.del-edit-img-btn').forEach(delBtn => {
                             delBtn.addEventListener('click', async () => {
                                 if (!confirm('Delete this image?')) return;
-                                const col = delBtn.dataset.col;
+                                const imgId = parseInt(delBtn.dataset.imgId);
                                 const file = delBtn.dataset.file;
                                 try {
                                     await deleteImageFS(file);
-                                    db.run(`UPDATE entities SET ${col} = NULL, modified_at = CURRENT_TIMESTAMP WHERE id = ?;`, [parseInt(id)]);
+                                    removeEntityImage(imgId);
+                                    db.run("UPDATE entities SET modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [parseInt(id)]);
                                     updateTable();
                                     showNotification('Image deleted', 'error');
                                 } catch (err) {
@@ -1865,6 +1909,7 @@ function updateTable() {
                 db.run("DELETE FROM entity_tags WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entity_field_value WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entity_field_value_multi WHERE entity_id = ?;", [id]);
+                db.run("DELETE FROM entity_images WHERE entity_id = ?;", [id]);
                 db.run("DELETE FROM entities WHERE id = ?;", [id]);
                 updateTable();
                 showNotification('Entity "' + entityName + '" deleted', 'error');
@@ -1891,7 +1936,7 @@ function updateTable() {
                 }
                 const uid = parseInt(tr.dataset.id);
                 try {
-                    const stmt = db.prepare("SELECT name, image, image_2, image_3 FROM entities WHERE id = ?");
+                    const stmt = db.prepare("SELECT name FROM entities WHERE id = ?");
                     stmt.bind([uid]);
                     if (!stmt.step()) { stmt.free(); return; }
                     const row = stmt.getAsObject();
@@ -1902,18 +1947,8 @@ function updateTable() {
                     const filename = `${safeName}_${randomId}.${ext}`;
                     const blob = new Blob([await file.arrayBuffer()], { type: file.type });
                     await saveImageFS(blob, filename);
-                    let col;
-                    let oldFile = null;
-                    if (!row.image) {
-                        col = 'image';
-                    } else if (!row.image_2) {
-                        col = 'image_2';
-                    } else {
-                        col = 'image_3';
-                        if (row.image_3) oldFile = row.image_3;
-                    }
-                    if (oldFile) await deleteImageFS(oldFile);
-                    db.run(`UPDATE entities SET ${col} = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;`, [filename, uid]);
+                    addEntityImage(uid, filename);
+                    db.run("UPDATE entities SET modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [uid]);
                     updateTable();
                     showNotification('Entity "' + row.name + '" image updated', 'warning');
                 } catch (err) {
@@ -2040,6 +2075,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     db.run("DELETE FROM entity_field_value_multi;");
     db.run("DELETE FROM entity_tags;");
     db.run("DELETE FROM entity_features;");
+    db.run("DELETE FROM entity_images;");
     db.run("DELETE FROM entities;");
     updateTable();
     showNotification('All entities deleted', 'error');
@@ -2121,9 +2157,9 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
 
         db = new SQL.Database(Uints);
 
-    db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, image TEXT, image_2 TEXT, image_3 TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
-        try { db.run("ALTER TABLE entities ADD COLUMN image_2 TEXT;"); } catch(e) {}
-        try { db.run("ALTER TABLE entities ADD COLUMN image_3 TEXT;"); } catch(e) {}
+    db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+        db.run("CREATE TABLE IF NOT EXISTS entity_images (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, filename TEXT);");
+        migrateEntityImages();
         db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
         db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
         db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");
