@@ -28,6 +28,7 @@ initSqlJs(config).then(function(sqlModule){
 
     migrateFieldValues();
     migrateEntityImages();
+    ensureEntityDateColumns();
 
     // Insert default feature
     const featuresCount = db.exec("SELECT COUNT(*) as cnt FROM features;");
@@ -227,6 +228,21 @@ function migrateEntityImages() {
     }
 }
 
+// Some legacy/migrated DBs rebuilt the entities table without the date columns
+// or without their DEFAULT CURRENT_TIMESTAMP. Ensure they exist and backfill.
+function ensureEntityDateColumns() {
+    try {
+        const info = db.exec("SELECT name FROM pragma_table_info('entities');");
+        const cols = info.length ? info[0].values.map(v => v[0]) : [];
+        if (!cols.includes('date')) db.run("ALTER TABLE entities ADD COLUMN date TIMESTAMP;");
+        if (!cols.includes('modified_at')) db.run("ALTER TABLE entities ADD COLUMN modified_at TIMESTAMP;");
+        db.run("UPDATE entities SET date = COALESCE(modified_at, CURRENT_TIMESTAMP) WHERE date IS NULL;");
+        db.run("UPDATE entities SET modified_at = COALESCE(date, CURRENT_TIMESTAMP) WHERE modified_at IS NULL;");
+    } catch (e) {
+        console.error('ensureEntityDateColumns error:', e);
+    }
+}
+
 // Handle image upload from input
 document.getElementById('imageInput').addEventListener('change', async function(e) {
     const file = e.target.files[0];
@@ -417,16 +433,16 @@ function renderFeatureInputs(selectedValues = {}) {
         return;
     }
     const grades = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
-    let html = '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
+    let html = '';
     featuresList.forEach(c => {
         const val = selectedValues[c.id] || 'D';
-        html += `<label class="feature-item">${c.name}:
-            <select class="feature-select" data-feature-id="${c.id}">
-                ${grades.map(g => `<option value="${g}" ${g === val ? 'selected' : ''}>${g}</option>`).join('')}
-            </select>
-        </label>`;
+        html += `<div class="feature-item"><span class="feature-item-name">${c.name}:</span><span class="feature-radios">`;
+        grades.forEach(g => {
+            const rid = `feature_${c.id}_${g}`;
+            html += `<label class="feature-radio" for="${rid}"><input type="radio" id="${rid}" name="feature_${c.id}" class="feature-radio-input" data-feature-id="${c.id}" value="${g}"${g === val ? ' checked' : ''}><span>${g}</span></label>`;
+        });
+        html += '</span></div>';
     });
-    html += '</div>';
     container.innerHTML = html;
 }
 
@@ -456,10 +472,9 @@ document.getElementById('addFeatureBtn').addEventListener('click', () => {
 });
 
 function getFeatureValues() {
-    const selects = document.querySelectorAll('#featureInputsContainer .feature-select');
     const values = {};
-    selects.forEach(sel => {
-        values[parseInt(sel.dataset.featureId)] = sel.value;
+    document.querySelectorAll('#featureInputsContainer .feature-radio-input:checked').forEach(inp => {
+        values[parseInt(inp.dataset.featureId)] = inp.value;
     });
     return values;
 }
@@ -971,7 +986,7 @@ dropZone.addEventListener('drop', async (e) => {
                 if (!confirm(msg)) { errors++; continue; }
             }
 
-            db.run("INSERT INTO entities (name) VALUES (?);", [name]);
+            db.run("INSERT INTO entities (name, date, modified_at) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);", [name]);
             const newId = db.exec("SELECT last_insert_rowid();");
             const entityId = newId[0].values[0][0];
 
@@ -1680,16 +1695,17 @@ function updateTable() {
                             featureRes[0].values.forEach(r => { vals[r[0]] = r[1]; });
                         }
                         const grades = ['F', 'E', 'D', 'C', 'B', 'A', 'S'];
-                        let selHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+                        let selHtml = '';
                         featuresList.forEach(c => {
                             const v = vals[c.id] || 'D';
-                            selHtml += `<label style="font-size:0.85em">${c.name}:
-                                <select class="feature-edit-select" data-feature-id="${c.id}" style="padding:1px 2px;font-size:0.85em">
-                                    ${grades.map(g => `<option value="${g}" ${g === v ? 'selected' : ''}>${g}</option>`).join('')}
-                                </select>
-                            </label>`;
+                            selHtml += `<div class="feature-item"><span class="feature-item-name">${c.name}:</span><span class="feature-radios">`;
+                            grades.forEach(g => {
+                                const rid = `feature_edit_${id}_${c.id}_${g}`;
+                                selHtml += `<label class="feature-radio" for="${rid}"><input type="radio" id="${rid}" name="feature_edit_${id}_${c.id}" class="feature-edit-radio" data-feature-id="${c.id}" value="${g}"${g === v ? ' checked' : ''}><span>${g}</span></label>`;
+                            });
+                            selHtml += '</span></div>';
                         });
-                        selHtml += '</div>';
+                        featureCell.classList.add('editing');
                         featureCell.innerHTML = selHtml;
                     }
 
@@ -1818,10 +1834,10 @@ function updateTable() {
                     db.run("UPDATE entities SET name = ?, modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [newName, id]);
 
                     // Store features data structures modifications
-                    const selects = featureCell ? featureCell.querySelectorAll('.feature-edit-select') : [];
-                    selects.forEach(sel => {
-                        const featureId = parseInt(sel.dataset.featureId);
-                        const value = sel.value;
+                    const radios = featureCell ? featureCell.querySelectorAll('.feature-edit-radio:checked') : [];
+                    radios.forEach(inp => {
+                        const featureId = parseInt(inp.dataset.featureId);
+                        const value = inp.value;
                         db.run("INSERT OR REPLACE INTO entity_features (entity_id, feature_id, value) VALUES (?, ?, ?);",
                             [parseInt(id), featureId, value]);
                     });
@@ -2038,7 +2054,7 @@ document.getElementById('insertBtn').addEventListener('click', () => {
         if (!confirm(msg)) return;
     }
 
-    db.run("INSERT INTO entities (name) VALUES (?);", [name]);
+    db.run("INSERT INTO entities (name, date, modified_at) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);", [name]);
     const newId = db.exec("SELECT last_insert_rowid();");
     const entityId = newId[0].values[0][0];
 
@@ -2160,6 +2176,7 @@ document.getElementById('uploadInput').addEventListener('change', function(e) {
     db.run("CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
         db.run("CREATE TABLE IF NOT EXISTS entity_images (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, filename TEXT);");
         migrateEntityImages();
+        ensureEntityDateColumns();
         db.run("CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL);");
         db.run("CREATE TABLE IF NOT EXISTS entity_features (entity_id INTEGER, feature_id INTEGER, value TEXT, PRIMARY KEY (entity_id, feature_id));");
         db.run("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, factor REAL, description TEXT);");

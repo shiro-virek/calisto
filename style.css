@@ -94,9 +94,17 @@ td { background-color: #2d2d3f; }
 .badge-D { color: #00bcd4; font-weight: bold; }
 .badge-E { color: #9b59b6; font-weight: bold; }
 .badge-F { color: #e91e90; font-weight: bold; }
-.feature-item { margin-right: 8px; display: inline-block; }
+.feature-item { display: flex; align-items: center; margin-bottom: 6px; }
 .feature-cell { max-width: 200px; }
-.feature-select { margin: 0 6px 0 2px; padding: 2px 4px; background: #45475a; color: #e0e0e0; border: 1px solid #585b70; border-radius: 3px; }
+.feature-cell.editing { max-width: none; min-width: 300px; }
+.feature-cell.editing .feature-item { font-size: 0.85em; margin-bottom: 4px; }
+.feature-cell.editing .feature-item-name { margin-right: 6px; }
+.feature-cell.editing .feature-radios { flex-wrap: nowrap; gap: 6px; }
+.feature-cell.editing .feature-radio { gap: 2px; white-space: nowrap; }
+.feature-item-name { margin-right: 10px; }
+.feature-radios { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.feature-radio { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; }
+.feature-radio input { margin: 0; cursor: pointer; }
 .tag-badge { display:inline-block; margin:2px 4px 2px 0; padding:2px 8px; border-radius:10px; background:#34495e; color:white; font-size:0.8em; font-weight:bold; }
 .tag-cell { max-width: 220px; }
 .tag-check { margin-right:8px; display:inline-flex; align-items:center; gap:3px; color:#e0e0e0; }
