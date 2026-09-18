@@ -986,9 +986,19 @@ dropZone.addEventListener('drop', async (e) => {
                 if (!confirm(msg)) { errors++; continue; }
             }
 
+            // Save the image first: if it fails, no entity is created.
+            const ext = file.name.split('.').pop() || 'png';
+            const randomId = Math.random().toString(36).substring(2, 10);
+            const safeName = String(name).replace(/[\\/:*?"<>|]/g, '_').trim() || name;
+            const filename = `${safeName}_${randomId}.${ext}`;
+            const blob = new Blob([await file.arrayBuffer()], { type: file.type });
+            await saveImageFS(blob, filename);
+
             db.run("INSERT INTO entities (name, date, modified_at) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);", [name]);
             const newId = db.exec("SELECT last_insert_rowid();");
             const entityId = newId[0].values[0][0];
+
+            addEntityImage(entityId, filename);
 
             // Save features with default values
             const vals = getFeatureValues();
@@ -1001,15 +1011,6 @@ dropZone.addEventListener('drop', async (e) => {
             // Save custom fields
             const fieldVals = getCustomFieldValues();
             saveFieldValues(entityId, fieldVals);
-
-            // Upload image
-            const ext = file.name.split('.').pop() || 'png';
-            const randomId = Math.random().toString(36).substring(2, 10);
-            const filename = `${name}_${randomId}.${ext}`;
-            const blob = new Blob([await file.arrayBuffer()], { type: file.type });
-            await saveImageFS(blob, filename);
-            addEntityImage(entityId, filename);
-            db.run("UPDATE entities SET modified_at = CURRENT_TIMESTAMP WHERE id = ?;", [entityId]);
 
             created++;
         } catch (err) {
